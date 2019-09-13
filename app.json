@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Potluck Market",
+    "slug": "Potluck",
+    "description": "An app to help NJMMP's make informed choices on medical cannabis.",
+    "privacy": "unlisted",
+    "sdkVersion": "34.0.0",
+    "platforms": ["ios", "android", "web"],
+    "version": "1.5.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/potluck_logo_txt_large.png",
+    "splash": {
+      "image": "./assets/images/potluck_logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#46B060"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "bundleIdentifier": "com.potluckmarket.Potluck",
+      "buildNumber": "1.5.0",
+      "icon": "./assets/images/potluck_logo_txt_large.png",
+      "supportsTablet": true,
+      "isTabletOnly": false,
+      "usesIcloudStorage": false,
+      "splash": {
+        "backgroundColor": "#46B060",
+        "resizeMode": "contain",
+        "image": "./assets/images/potluck_logo.png",
+        "tabletImage": "./assets/images/potluck_logo.png"
+      }
+    },
+    "android": {
+      "package": "com.potluckmarket.Potluck",
+      "versionCode": 3,
+      "icon": "./assets/images/potluck_logo_txt_large.png",
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "splash": {
+        "backgroundColor": "#46B060",
+        "resizeMode": "contain",
+        "ldpi": "./assets/images/potluck_logo.png",
+        "mdpi": "./assets/images/potluck_logo.png",
+        "hdpi": "./assets/images/potluck_logo.png",
+        "xhdpi": "./assets/images/potluck_logo.png",
+        "xxhdpi": "./assets/images/potluck_logo.png",
+        "xxxhdpi": "./assets/images/potluck_logo.png"
+      }
+    }
+  }
+}
