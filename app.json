@@ -34,9 +34,8 @@
     },
     "android": {
       "package": "com.potluckmarket.Potluck",
-      "versionCode": 3,
+      "versionCode": 4,
       "icon": "./assets/images/potluck_logo_txt_large.png",
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
       "splash": {
         "backgroundColor": "#46B060",
         "resizeMode": "contain",
