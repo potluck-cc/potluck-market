@@ -5,7 +5,6 @@ import {
   ScrollView,
   Platform
 } from "react-native";
-
 import styles from "./defaultStyles";
 import { Input, Button, Text, Layout } from "react-native-ui-kitten";
 import { Icon } from "react-native-elements";
@@ -102,7 +101,7 @@ function SignUp({ navigation: { navigate, goBack } }: Props) {
 
   function getKeyboardOffset(height: number): number {
     return Platform.select({
-      ios: offset,
+      ios: isIphoneXorAbove() ? 5 : offset,
       android: offset
     });
   }
@@ -146,13 +145,17 @@ function SignUp({ navigation: { navigate, goBack } }: Props) {
           }),
           paddingBottom: 5
         }}
+        contentContainerStyle={{
+          alignItems: "center",
+          justifyContent: "center"
+        }}
       >
         <Layout
           style={{
-            alignItems: "center",
-            justifyContent: "center",
             paddingLeft: 25,
-            paddingRight: 25
+            paddingRight: 25,
+            paddingBottom: 10,
+            width: "100%"
           }}
         >
           <AvoidKeyboard autoDismiss offset={getKeyboardOffset}>

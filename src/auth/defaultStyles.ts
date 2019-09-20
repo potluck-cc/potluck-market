@@ -26,7 +26,7 @@ export default StyleSheet.create({
   errorText: {
     color: "red",
     marginTop: 10,
-    marginBottom: 10
+    marginBottom: 8
   },
   loader: {
     paddingTop: 10

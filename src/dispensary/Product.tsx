@@ -1,22 +1,20 @@
-import React, { memo, useRef, Fragment, useState } from "react";
-import {
-  StyleSheet,
-  Image,
-  View,
-  TouchableOpacity,
-  Platform
-} from "react-native";
+import React, { memo, Fragment, useState, useEffect } from "react";
+import { StyleSheet, Image, View, Platform, ScrollView } from "react-native";
 import { Text } from "react-native-ui-kitten";
-import { Icon } from "react-native-elements";
-import { Dimensions, Colors, isIphoneXorAbove, isTablet } from "common";
-import { ButtonHeader } from "common/components";
-import SlidingUpPanel from "rn-sliding-up-panel";
-import { Pages } from "react-native-pages";
+import {
+  Dimensions,
+  Colors,
+  isIphoneXorAbove,
+  isTablet,
+  useTimer
+} from "common";
+import { ButtonHeader, Display } from "common/components";
 import { Graph } from "./components";
 import ImageView from "react-native-image-view";
 import { Image as CacheImage } from "react-native-expo-image-cache";
 import { ProductType } from "@potluckmarket/louis";
 import { scale, moderateScale } from "react-native-size-matters";
+import { Analytics } from "aws-amplify";
 
 type ProductProps = {
   navigation: import("react-navigation").NavigationScreenProp<
@@ -40,7 +38,6 @@ export default memo(function Product({
     null
   );
   const store: import("@potluckmarket/louis").Store = getParam("store", null);
-  const _panel = useRef(null);
   const [isImageModalVisible, setIsImageModalVisible] = useState(false);
 
   const images = [
@@ -50,6 +47,44 @@ export default memo(function Product({
       }
     }
   ];
+
+  const { start, end } = useTimer();
+
+  useEffect(() => {
+    start();
+
+    return () => {
+      const visitTime = end();
+      recordPageVisit(visitTime);
+    };
+  }, []);
+
+  function buildAnalyticsAttributes() {
+    let attributes = {};
+
+    if (product) {
+      attributes["productType"] = product.productType;
+      attributes["strainType"] = product.strainType;
+
+      if (product.product && product.product.name) {
+        attributes["productName"] = product.product.name;
+      }
+    }
+
+    return attributes;
+  }
+
+  async function recordPageVisit(visitTime: number) {
+    const attributes = await buildAnalyticsAttributes();
+
+    Analytics.record({
+      name: "productVisit",
+      attributes,
+      metrics: {
+        secondsBrowsed: visitTime
+      }
+    });
+  }
 
   function buildGraphDataObject(
     productType?: ProductType
@@ -131,7 +166,7 @@ export default memo(function Product({
       <Fragment>
         <Graph
           data={data}
-          width={Dimensions.width}
+          width={300}
           height={moderateScale(220)}
           chartConfig={chartConfig}
         />
@@ -196,81 +231,44 @@ export default memo(function Product({
   }
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        onPress={() => setIsImageModalVisible(true)}
-        activeOpacity={0.8}
-        disabled={!product || !product.image}
-      >
-        {renderImageHeader()}
-        <ButtonHeader onBackBtnPress={() => goBack(null)} />
-      </TouchableOpacity>
-
-      <SlidingUpPanel
-        showBackdrop={false}
-        ref={_panel}
-        draggableRange={styles.panelContainer}
-        allowMomentum
-        snappingPoints={[Dimensions.height - 30]}
-      >
-        {dragHandler => (
-          <View style={styles.panel}>
-            <View style={styles.wrapper}>
-              <View {...dragHandler} style={styles.panelPrimaryContentWrapper}>
-                <View style={styles.panelIconContainer}>
-                  <Icon
-                    name="drag-handle"
-                    type="material"
-                    color="#777"
-                    size={scale(30)}
-                  />
-                </View>
-
-                <View
-                  style={{
-                    marginTop: 40,
-                    justifyContent: "center",
-                    alignItems: "center"
-                  }}
-                >
-                  <Text category="h6" style={styles.productName}>
-                    {product.product.name}
-                  </Text>
-                  <Text category="c1" style={styles.productStrainType}>
-                    {product.strainType}
-                  </Text>
-                </View>
-              </View>
-
-              <Pages
-                indicatorColor="black"
-                indicatorPosition="top"
-                style={styles.pagesContainer}
-              >
-                <View style={styles.page}>
-                  <Text category="h6" style={styles.title}>
-                    Description
-                  </Text>
-
-                  <Text style={styles.description}>
-                    {product.description
-                      ? product.description
-                      : "No description available."}
-                  </Text>
-                </View>
-
-                <View style={styles.page}>
-                  <Text category="h6" style={styles.title}>
-                    Cannabinoids
-                  </Text>
-
-                  {renderCannabinoidProfile()}
-                </View>
-              </Pages>
-            </View>
-          </View>
-        )}
-      </SlidingUpPanel>
+    <ScrollView style={styles.container}>
+      <Display
+        imageSmall
+        imageSource={
+          product && product.image
+            ? product.image
+            : store && store.logo
+            ? store.logo
+            : null
+        }
+        onImagePress={() => setIsImageModalVisible(true)}
+        imagePressDisabled={!product || !product.image}
+        renderHeader={() => <ButtonHeader onBackBtnPress={() => goBack()} />}
+        cards={[
+          {
+            cardStyle: styles.page,
+            renderContent: () => (
+              <Fragment>
+                <Text category="h6" style={styles.productName}>
+                  {product.product.name}
+                </Text>
+                <Text category="c1" style={styles.productStrainType}>
+                  {product.strainType}
+                </Text>
+                {product.description && (
+                  <Text style={styles.description}>{product.description}</Text>
+                )}
+              </Fragment>
+            )
+          },
+          {
+            cardStyle: styles.page,
+            renderContent: () => (
+              <Fragment>{renderCannabinoidProfile()}</Fragment>
+            )
+          }
+        ]}
+      />
 
       {product && product.image && (
         <ImageView
@@ -280,16 +278,13 @@ export default memo(function Product({
           onClose={() => setIsImageModalVisible(false)}
         />
       )}
-    </View>
+    </ScrollView>
   );
 });
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    paddingTop: Platform.select({
-      ios: isIphoneXorAbove() ? 50 : null
-    })
+    backgroundColor: Colors.gray
   },
   image: {
     width: Dimensions.width,
@@ -345,11 +340,9 @@ const styles = StyleSheet.create({
     backgroundColor: "white"
   },
   page: {
-    marginTop: 20,
-    padding: 20,
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "white",
-    flex: 1
+    paddingHorizontal: 10
   },
   title: {
     fontSize: scale(18),
@@ -359,7 +352,9 @@ const styles = StyleSheet.create({
   description: {
     fontSize: scale(16),
     padding: isTablet() ? scale(13) : 0,
-    lineHeight: scale(20)
+    lineHeight: scale(20),
+    textAlign: "center",
+    paddingTop: 10
   },
   dataText: {
     fontSize: scale(16),

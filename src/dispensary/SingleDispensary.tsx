@@ -1,20 +1,18 @@
-import React, { memo, useState } from "react";
+import React, { memo, useState, useEffect, Fragment } from "react";
 import {
   Linking,
   StatusBar,
   Platform,
   ScrollView,
-  View,
   TouchableOpacity,
   StyleSheet
 } from "react-native";
-import { Colors, Dimensions, isIphoneXorAbove, isTablet } from "common";
-import { ButtonHeader, Divider } from "common/components";
+import { Colors, isIphoneXorAbove, isTablet, useTimer } from "common";
+import { ButtonHeader, Display } from "common/components";
 import { Text, Button } from "react-native-ui-kitten";
 import ImageView from "react-native-image-view";
-import { Transition } from "react-navigation-fluid-transitions";
-import { Image } from "react-native-expo-image-cache";
-import { scale, verticalScale, moderateScale } from "react-native-size-matters";
+import { scale } from "react-native-size-matters";
+import { Analytics } from "aws-amplify";
 
 type SingleStoreProps = {
   navigation: import("react-navigation").NavigationScreenProp<
@@ -38,6 +36,38 @@ function SingleStore({
     }
   ];
 
+  const { start, end } = useTimer();
+
+  useEffect(() => {
+    start();
+
+    return () => {
+      const visitTime = end();
+      recordPageVisit(visitTime);
+    };
+  }, []);
+
+  function recordPageVisit(visitTime: number) {
+    if (store && store.name) {
+      Analytics.record({
+        name: "dispensaryVisit",
+        attributes: {
+          dispensaryName: store.name
+        },
+        metrics: {
+          secondsBrowsed: visitTime
+        }
+      });
+    } else {
+      Analytics.record({
+        name: "dispensaryVisit",
+        metrics: {
+          secondsBrowsed: visitTime
+        }
+      });
+    }
+  }
+
   function renderHours(hours) {
     return hours.map((timeblock, index) => {
       const str = `${timeblock.day}: ${timeblock.startTime} - ${timeblock.endTime}`;
@@ -53,98 +83,83 @@ function SingleStore({
     });
   }
 
-  function customTransition(transitionInfo) {
-    // only looks good on ios.. leaving out for now.
-    const { progress, start, end } = transitionInfo;
-    const scaleInterpolation = progress.interpolate({
-      inputRange: [0, start, end, 1],
-      outputRange: [0, 0.5, 1, 1]
-    });
-    return { transform: [{ scale: scaleInterpolation }] };
-  }
-
   return (
     <ScrollView style={styles.container}>
       <StatusBar hidden />
 
-      <Transition shared={store.storefrontImage}>
-        <TouchableOpacity
-          onPress={() => setIsImageModalVisible(true)}
-          activeOpacity={0.8}
-          disabled={!store || !store.storefrontImage}
-        >
-          <Image
-            {...{
-              preview: { uri: store.storefrontImage },
-              uri: store.storefrontImage
-            }}
-            style={styles.imageHeader}
-          />
-          <ButtonHeader onBackBtnPress={() => goBack()} />
-        </TouchableOpacity>
-      </Transition>
+      <Display
+        imageSource={store.storefrontImage}
+        onImagePress={() => setIsImageModalVisible(true)}
+        imagePressDisabled={!store || !store.storefrontImage}
+        renderHeader={() => <ButtonHeader onBackBtnPress={() => goBack()} />}
+        transition
+        cards={[
+          {
+            cardStyle: styles.cardStyle,
+            renderContent: () => {
+              return (
+                <Fragment>
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL(`${store.link}`)}
+                  >
+                    <Text category="h2" style={styles.dispensaryName}>
+                      {store.name}
+                    </Text>
+                  </TouchableOpacity>
 
-      <Transition anchor={store.storefrontImage} appear="bottom">
-        <View style={styles.detailHeader}>
-          <TouchableOpacity onPress={() => Linking.openURL(`${store.link}`)}>
-            <Text category="h2" style={styles.dispensaryName}>
-              {store.name}
-            </Text>
-          </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (Platform.OS === "ios") {
+                        Linking.openURL(
+                          `http://maps.apple.com/maps?daddr=${store.latitude},${store.longitude}`
+                        );
+                      } else {
+                        Linking.openURL(
+                          `http://maps.google.com/maps?daddr=${store.latitude},${store.longitude}`
+                        );
+                      }
+                    }}
+                  >
+                    <Text
+                      style={styles.text}
+                    >{`${store.street} ${store.city}, ${store.state} ${store.zip}`}</Text>
+                  </TouchableOpacity>
 
-          <Button
-            onPress={() => {
-              navigate("Menu", {
-                menu: true,
-                store
-              });
-            }}
-            style={styles.btn}
-            activeOpacity={0.6}
-          >
-            VIEW MENU
-          </Button>
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL(`tel:${store.phone}`)}
+                  >
+                    <Text style={styles.text}>{store.phone}</Text>
+                  </TouchableOpacity>
 
-          <Divider style={styles.divider} />
-
-          <View style={styles.informationContainer}>
-            <Text category="h6" style={styles.title}>
-              Info
-            </Text>
-
-            <TouchableOpacity
-              onPress={() => {
-                if (Platform.OS === "ios") {
-                  Linking.openURL(
-                    `http://maps.apple.com/maps?daddr=${store.latitude},${store.longitude}`
-                  );
-                } else {
-                  Linking.openURL(
-                    `http://maps.google.com/maps?daddr=${store.latitude},${store.longitude}`
-                  );
-                }
-              }}
-            >
-              <Text
-                style={styles.text}
-              >{`${store.street} ${store.city}, ${store.state} ${store.zip}`}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => Linking.openURL(`tel:${store.phone}`)}
-            >
-              <Text style={styles.text}>{store.phone}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.hoursContainer}>
-            <Text category="h6" style={styles.title}>
-              Hours
-            </Text>
-            {store.hours && renderHours(store.hours)}
-          </View>
-        </View>
-      </Transition>
+                  <Button
+                    onPress={() => {
+                      navigate("Menu", {
+                        menu: true,
+                        store
+                      });
+                    }}
+                    style={styles.btn}
+                    activeOpacity={0.6}
+                  >
+                    VIEW MENU
+                  </Button>
+                </Fragment>
+              );
+            }
+          },
+          {
+            cardStyle: styles.cardStyle,
+            renderContent: () => (
+              <Fragment>
+                <Text category="h2" style={styles.title}>
+                  Hours
+                </Text>
+                {store.hours && renderHours(store.hours)}
+              </Fragment>
+            )
+          }
+        ]}
+      />
 
       {store && store.storefrontImage && (
         <ImageView
@@ -160,18 +175,12 @@ function SingleStore({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "white",
-    paddingTop: Platform.select({
-      ios: isIphoneXorAbove() ? 50 : null
-    })
-  },
-  imageHeader: {
-    height: Dimensions.width,
-    width: Dimensions.width
+    backgroundColor: Colors.gray
   },
   dispensaryName: {
     textAlign: "center",
-    fontSize: scale(24),
+    marginBottom: 5,
+    fontSize: scale(28),
     padding: isTablet() ? scale(10) : 0
   },
   detailHeader: {
@@ -195,7 +204,7 @@ const styles = StyleSheet.create({
   title: {
     marginBottom: 5,
     textAlign: "center",
-    fontSize: scale(16),
+    fontSize: scale(24),
     padding: isTablet() ? scale(5) : 0
   },
   informationContainer: {
@@ -214,6 +223,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.medGreen,
     borderColor: Colors.medGreen,
     width: "85%"
+  },
+  cardStyle: {
+    justifyContent: "center",
+    alignItems: "center"
   }
 });
 
