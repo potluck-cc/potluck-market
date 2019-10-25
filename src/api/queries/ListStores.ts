@@ -2,7 +2,7 @@ import gql from "graphql-tag";
 
 export default gql`
   query ListStores {
-    listStores {
+    listStores(filter: { public: { eq: true } }) {
       items {
         id
         name
@@ -26,7 +26,6 @@ export default gql`
           items {
             id
             productType
-            quantity
             image
             price
             isCannabisProduct
@@ -41,7 +40,7 @@ export default gql`
             product {
               id
               name
-              searchField
+              slug
             }
           }
         }

@@ -1,16 +1,23 @@
-import React, { useState, memo, Fragment } from "react";
+import React, { useState, memo } from "react";
 import {
   View,
   StyleSheet,
   Platform,
   ImageSourcePropType,
-  TouchableOpacity
+  TouchableOpacity,
+  ScrollView
 } from "react-native";
 import { ProductType } from "@potluckmarket/louis";
 import { Icon } from "react-native-elements";
-import { TabView, Tab, TabBar } from "react-native-ui-kitten";
+import { Tab, TabBar } from "react-native-ui-kitten";
 import { CategoryIcon, ProductList, SearchHeader } from "./components";
-import { Colors, isIphoneXorAbove } from "common";
+import { useDimensions, stackHistory, RNWebComponent } from "common";
+import { partialApplication } from "@potluckmarket/ella";
+import { isBrowser, isMobile } from "react-device-detect";
+
+interface MenuProps extends RNWebComponent {
+  openModal?: (item: import("@potluckmarket/louis").InventoryItem) => void;
+}
 
 type Tab = {
   bgColor: string;
@@ -18,18 +25,16 @@ type Tab = {
   category: import("@potluckmarket/louis").ProductType;
 };
 
-type MenuProps = {
-  navigation: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >;
-};
-
 const tabs: Tab[] = [
   {
     bgColor: "#46B060",
     icon: require("assets/images/Flower.png"),
     category: ProductType.Flower
+  },
+  {
+    bgColor: "#1C1E1D",
+    icon: require("assets/images/joints.png"),
+    category: ProductType.PreRolls
   },
   {
     bgColor: "#4661B0",
@@ -48,10 +53,25 @@ const tabs: Tab[] = [
   }
 ];
 
-function Menu({ navigation: { navigate, getParam, goBack } }: MenuProps) {
+function Menu(props: MenuProps) {
   const [selectedIndex, selectIndex] = useState(0);
 
-  const store: import("@potluckmarket/louis").Store = getParam("store", null);
+  const store: import("@potluckmarket/louis").Store =
+    Platform.OS === "web"
+      ? props.location.state[0].store
+      : props.navigation.getParam("store", {});
+
+  const { heightToDP } = useDimensions();
+
+  let navigateToWebURL;
+
+  if (Platform.OS === "web") {
+    navigateToWebURL = partialApplication(
+      stackHistory,
+      props.history,
+      props.location.pathname
+    );
+  }
 
   function filterProductsByCategory(
     products: import("@potluckmarket/louis").InventoryItem[],
@@ -64,59 +84,37 @@ function Menu({ navigation: { navigate, getParam, goBack } }: MenuProps) {
     return tabs.map((tab, index) => {
       const isTabActive: boolean = index === selectedIndex;
 
-      if (Platform.OS === "android") {
-        return (
-          <Tab
-            key={index}
-            icon={() => (
-              <CategoryIcon
-                containerStyle={{
-                  backgroundColor: tab.bgColor,
-                  opacity: isTabActive ? 1 : 0.8
-                }}
-                source={tab.icon}
-              />
-            )}
-            activeOpacity={0.5}
-            style={styles.tab}
-          ></Tab>
-        );
-      }
-
       return (
         <Tab
           key={index}
+          // onPress={() => selectIndex(index)}
           icon={() => (
             <CategoryIcon
               containerStyle={{
                 backgroundColor: tab.bgColor,
-                opacity: isTabActive ? 1 : 0.6
+                opacity: isTabActive ? 1 : 0.5
               }}
               source={tab.icon}
+              onPress={
+                Platform.OS === "web" && isBrowser
+                  ? null
+                  : () => selectIndex(index)
+              }
             />
           )}
           activeOpacity={0.5}
           style={styles.tab}
-        >
-          <ProductList
-            products={filterProductsByCategory(
-              store && store.inventory && store.inventory.items
-                ? store.inventory.items
-                : [],
-              tab.category
-            )}
-            navigate={navigate}
-            store={store}
-          />
-        </Tab>
+        />
       );
     });
   }
 
   return (
-    <Fragment>
+    <View style={{ height: heightToDP("100%") }}>
       <SearchHeader
-        navigate={navigate}
+        navigate={
+          Platform.OS === "web" ? navigateToWebURL : props.navigation.navigate
+        }
         products={
           store && store.inventory && store.inventory.items
             ? store.inventory.items
@@ -124,68 +122,61 @@ function Menu({ navigation: { navigate, getParam, goBack } }: MenuProps) {
         }
         store={store}
         secondaryComponent={
-          <TouchableOpacity
-            onPress={() => goBack(null)}
-            style={{ paddingRight: 10 }}
-          >
-            <Icon name="keyboard-backspace" size={30} color="black" />
-          </TouchableOpacity>
+          Platform.OS === "web" && !isMobile ? null : (
+            <TouchableOpacity
+              onPress={() => {
+                if (Platform.OS === "web") {
+                  props.history.goBack();
+                } else {
+                  props.navigation.goBack(null);
+                }
+              }}
+              style={{ paddingRight: 10 }}
+            >
+              <Icon name="keyboard-backspace" size={30} color="black" />
+            </TouchableOpacity>
+          )
         }
       />
-      {Platform.OS === "android" ? (
-        <View style={{ flex: 1 }}>
-          <TabBar
-            selectedIndex={selectedIndex}
-            onSelect={selectIndex}
-            indicatorStyle={styles.indicator}
-            // tabBarStyle={styles.tabBar}
-            // shouldLoadComponent={index =>
-            //   index === selectedIndex ? true : false
-            // }
-          >
-            {renderTabs()}
-          </TabBar>
 
-          <ProductList
-            products={filterProductsByCategory(
-              store && store.inventory && store.inventory.items
-                ? store.inventory.items
-                : [],
-              tabs[selectedIndex].category
-            )}
-            navigate={navigate}
-            store={store}
-          />
-        </View>
-      ) : (
-        <TabView
+      <View style={{ flex: 1 }}>
+        <TabBar
           selectedIndex={selectedIndex}
           onSelect={selectIndex}
-          style={styles.tabView}
           indicatorStyle={styles.indicator}
-          tabBarStyle={styles.tabBar}
-          shouldLoadComponent={index =>
-            index === selectedIndex ? true : false
-          }
         >
-          {renderTabs()}
-        </TabView>
-      )}
-    </Fragment>
+          {Platform.OS === "web" ? (
+            renderTabs()
+          ) : (
+            <ScrollView horizontal>{renderTabs()}</ScrollView>
+          )}
+        </TabBar>
+
+        <ProductList
+          products={filterProductsByCategory(
+            store && store.inventory && store.inventory.items
+              ? store.inventory.items
+              : [],
+            tabs[selectedIndex].category
+          )}
+          navigate={
+            Platform.OS === "web" ? navigateToWebURL : props.navigation.navigate
+          }
+          store={store}
+          openModal={props.openModal}
+        />
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tabView: {
-    flex: 1,
-    paddingBottom: 75
-  },
   indicator: {
-    backgroundColor: Colors.green,
-    width: "25%"
+    backgroundColor: "transparent"
+    // width: "25%"
   },
   tab: {
-    flex: 1,
+    // flex: 1,
     padding: 10
   },
   tabBar: {}

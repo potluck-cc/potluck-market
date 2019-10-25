@@ -5,23 +5,36 @@ import {
   StyleSheet,
   ImageSourcePropType,
   ViewStyle,
-  ImageStyle
+  ImageStyle,
+  Platform
 } from "react-native";
+import { useDimensions } from "common";
+import { TouchableWithoutFeedback } from "react-native-gesture-handler";
+import { isMobile, isBrowser } from "react-device-detect";
 
 type CategoryIconProps = {
   source: ImageSourcePropType;
   containerStyle?: ViewStyle;
   imageStyle?: ImageStyle;
+  onPress?: () => void;
 };
 
 export default function CategoryIcon({
   source,
   containerStyle,
-  imageStyle
+  imageStyle,
+  onPress
 }: CategoryIconProps) {
+  const { widthToDP } = useDimensions();
+
   const styles = StyleSheet.create({
     container: {
-      width: 90,
+      zIndex: 999,
+      width: Platform.select({
+        web: widthToDP("15%"),
+        ios: widthToDP("25%"),
+        android: widthToDP("25%")
+      }),
       borderRadius: 10,
       height: 45,
       justifyContent: "center",
@@ -35,9 +48,13 @@ export default function CategoryIcon({
     }
   });
 
-  return (
+  return Platform.OS === "web" ? (
     <View style={styles.container}>
       <Image style={styles.image} source={source} />
     </View>
+  ) : (
+    <TouchableWithoutFeedback style={styles.container} onPress={onPress}>
+      <Image style={styles.image} source={source} />
+    </TouchableWithoutFeedback>
   );
 }

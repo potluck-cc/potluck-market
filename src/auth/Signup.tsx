@@ -9,19 +9,14 @@ import styles from "./defaultStyles";
 import { Input, Button, Text, Layout } from "react-native-ui-kitten";
 import { Icon } from "react-native-elements";
 import { AvoidKeyboard } from "common/components";
-import { Colors, isIphoneXorAbove } from "common";
+import Confirm from "./Confirm";
+import { Colors, isIphoneXorAbove, RNWebComponent } from "common";
 import { ButtonHeader } from "common/components";
 import { useAuth, useForm } from "@potluckmarket/ella";
 import { Auth } from "aws-amplify";
+import { isBrowser } from "react-device-detect";
 
-type Props = {
-  navigation: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >;
-};
-
-function SignUp({ navigation: { navigate, goBack } }: Props) {
+function SignUp(props: RNWebComponent) {
   const {
     handleSignUp,
     loading,
@@ -68,6 +63,8 @@ function SignUp({ navigation: { navigate, goBack } }: Props) {
 
   const [requiredError, setRequiredError] = useState(false);
 
+  const [confirm, setConfirm] = useState(false);
+
   useEffect(() => {
     initialize();
   }, []);
@@ -77,7 +74,11 @@ function SignUp({ navigation: { navigate, goBack } }: Props) {
     const signedUp = await retrieveData("signedUp");
 
     if (signedUp) {
-      navigate("Confirm");
+      if (Platform.OS === "web") {
+        setConfirm(true);
+      } else {
+        props.navigation.navigate("Confirm");
+      }
     }
   }
 
@@ -122,7 +123,12 @@ function SignUp({ navigation: { navigate, goBack } }: Props) {
           const { storeData } = await import("@potluckmarket/ella");
           await storeData("signedUp", "true");
           await storeData("username", username);
-          navigate("Confirm");
+
+          if (Platform.OS === "web") {
+            setConfirm(true);
+          } else {
+            props.navigation.navigate("Confirm");
+          }
         },
         error => handleError(typeof error === "string" ? error : error.message)
       );
@@ -132,9 +138,25 @@ function SignUp({ navigation: { navigate, goBack } }: Props) {
     }
   }
 
+  if (confirm) {
+    return (
+      <Confirm
+        navigation={props.navigation}
+        {...{
+          history: props.history,
+          location: props.location,
+          match: props.match
+        }}
+        setConfirm={setConfirm}
+      />
+    );
+  }
+
   return (
     <Fragment>
-      <ButtonHeader onBackBtnPress={() => goBack(null)} />
+      {Platform.OS !== "web" && (
+        <ButtonHeader onBackBtnPress={() => props.navigation.goBack(null)} />
+      )}
 
       <ScrollView
         style={{
@@ -150,14 +172,7 @@ function SignUp({ navigation: { navigate, goBack } }: Props) {
           justifyContent: "center"
         }}
       >
-        <Layout
-          style={{
-            paddingLeft: 25,
-            paddingRight: 25,
-            paddingBottom: 10,
-            width: "100%"
-          }}
-        >
+        <Layout style={styles.container}>
           <AvoidKeyboard autoDismiss offset={getKeyboardOffset}>
             <Input
               size="large"
@@ -165,7 +180,13 @@ function SignUp({ navigation: { navigate, goBack } }: Props) {
               onChangeText={text => handleStateChange("username", text)}
               value={username}
               style={styles.input}
-              keyboardType="numeric"
+              keyboardType={
+                Platform.OS === "web" && isBrowser
+                  ? "numeric"
+                  : Platform.OS !== "web"
+                  ? "numeric"
+                  : null
+              }
               returnKeyType="done"
               icon={({ tintColor }) => (
                 <Icon
@@ -271,11 +292,15 @@ function SignUp({ navigation: { navigate, goBack } }: Props) {
           <Text style={[styles.errorText, styles.center]}>{error}</Text>
 
           <TouchableOpacity
-            onPress={() =>
-              navigate("Signin", {
-                isSecondaryScreen: true
-              })
-            }
+            onPress={() => {
+              if (Platform.OS === "web") {
+                props.history.push("/signin");
+              } else {
+                props.navigation.navigate("Signin", {
+                  isSecondaryScreen: true
+                });
+              }
+            }}
             style={styles.center}
           >
             <Text>Sign In</Text>

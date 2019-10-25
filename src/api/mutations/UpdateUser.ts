@@ -15,6 +15,7 @@ export default gql`
     $street: String
     $city: String
     $state: State
+    $marketToken: String
   ) {
     updateUser(
       input: {
@@ -31,6 +32,7 @@ export default gql`
         street: $street
         city: $city
         state: $state
+        marketToken: $marketToken
       }
     ) {
       id

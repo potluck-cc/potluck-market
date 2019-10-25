@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { StyleSheet, View, Platform } from "react-native";
+import { StyleSheet, View, Platform, TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
 import { Input } from "react-native-ui-kitten";
 import { Colors, isIphoneXorAbove } from "common";
+import { isBrowser } from "react-device-detect";
 
 type SearchHeaderProps = {
   products: import("@potluckmarket/louis").InventoryItem[];
@@ -24,11 +25,19 @@ function SearchHeader({
 
   function onSubmitSearch() {
     if (query.length) {
-      navigate("SearchResults", {
-        searchQuery: query,
-        products,
-        store
-      });
+      if (Platform.OS === "web") {
+        navigate(isBrowser ? `/menu/search/${query}` : `/search/${query}`, {
+          store,
+          products,
+          searchQuery: query
+        });
+      } else {
+        navigate("SearchResults", {
+          searchQuery: query,
+          products,
+          store
+        });
+      }
     }
   }
 
@@ -50,13 +59,15 @@ function SearchHeader({
             onIconPress={onSubmitSearch}
             icon={style => {
               return (
-                <Icon
-                  iconStyle={{ paddingRight: 5 }}
-                  name="ios-search"
-                  type="ionicon"
-                  color={Colors.green}
-                  size={20}
-                />
+                <TouchableOpacity onPress={onSubmitSearch}>
+                  <Icon
+                    iconStyle={{ paddingRight: 5 }}
+                    name="ios-search"
+                    type="ionicon"
+                    color={Colors.green}
+                    size={20}
+                  />
+                </TouchableOpacity>
               );
             }}
           />
@@ -80,13 +91,24 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-evenly"
+    justifyContent: Platform.select({
+      web: isBrowser ? "flex-start" : "space-evenly",
+      android: "space-evenly",
+      ios: "space-evenly"
+    }),
+    padding: Platform.select({
+      web: isBrowser ? 20 : 0
+    })
   },
   SearchBar: {
     paddingRight: 10,
     flexDirection: "row",
     backgroundColor: "white",
-    width: "85%"
+    width: Platform.select({
+      web: isBrowser ? "35%" : "85%",
+      ios: "85%",
+      android: "85%"
+    })
   },
   secondaryComponent: {
     width: "15%",

@@ -1,40 +1,29 @@
-import React, { memo, useState, useEffect, Fragment } from "react";
-import {
-  Linking,
-  StatusBar,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet
-} from "react-native";
-import { Colors, isIphoneXorAbove, isTablet, useTimer } from "common";
-import { ButtonHeader, Display } from "common/components";
-import { Text, Button } from "react-native-ui-kitten";
-import ImageView from "react-native-image-view";
-import { scale } from "react-native-size-matters";
+import React, { memo, useState, useEffect, Suspense, lazy } from "react";
+import { View, Platform, ActivityIndicator, StyleSheet } from "react-native";
+import { useTimer, slugify, RNWebComponent, Colors, isTablet } from "common";
+import { Text } from "react-native-ui-kitten";
 import { Analytics } from "aws-amplify";
+import { Lightbox } from "./components";
+import { isBrowser } from "react-device-detect";
+import { scale } from "react-native-size-matters";
 
-type SingleStoreProps = {
-  navigation: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >;
-};
+const Layout = lazy(() =>
+  Platform.OS === "web"
+    ? isBrowser
+      ? import("./components/SingleDispensaryWebView")
+      : import("./components/SingleDispensaryMobileView")
+    : import("./components/SingleDispensaryMobileView")
+);
 
-function SingleStore({
-  navigation: { getParam, goBack, navigate }
-}: SingleStoreProps) {
-  const store: import("@potluckmarket/louis").Store = getParam("store", {});
+function SingleStore(props: RNWebComponent) {
+  const store: import("@potluckmarket/louis").Store =
+    Platform.OS === "web"
+      ? props.location.state[0].store
+      : props.navigation.getParam("store", {});
+
   const [isImageModalVisible, setIsImageModalVisible] = useState(false);
-  const date = new Date();
 
-  const images = [
-    {
-      source: {
-        uri: store && store.storefrontImage ? store.storefrontImage : null
-      }
-    }
-  ];
+  const date = new Date();
 
   const { start, end } = useTimer();
 
@@ -83,148 +72,87 @@ function SingleStore({
     });
   }
 
-  return (
-    <ScrollView style={styles.container}>
-      <StatusBar hidden />
+  function renderLightbox() {
+    let images = [];
 
-      <Display
-        imageSource={store.storefrontImage}
-        onImagePress={() => setIsImageModalVisible(true)}
-        imagePressDisabled={!store || !store.storefrontImage}
-        renderHeader={() => <ButtonHeader onBackBtnPress={() => goBack()} />}
-        transition
-        cards={[
-          {
-            cardStyle: styles.cardStyle,
-            renderContent: () => {
-              return (
-                <Fragment>
-                  <TouchableOpacity
-                    onPress={() => Linking.openURL(`${store.link}`)}
-                  >
-                    <Text category="h2" style={styles.dispensaryName}>
-                      {store.name}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (Platform.OS === "ios") {
-                        Linking.openURL(
-                          `http://maps.apple.com/maps?daddr=${store.latitude},${store.longitude}`
-                        );
-                      } else {
-                        Linking.openURL(
-                          `http://maps.google.com/maps?daddr=${store.latitude},${store.longitude}`
-                        );
-                      }
-                    }}
-                  >
-                    <Text
-                      style={styles.text}
-                    >{`${store.street} ${store.city}, ${store.state} ${store.zip}`}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => Linking.openURL(`tel:${store.phone}`)}
-                  >
-                    <Text style={styles.text}>{store.phone}</Text>
-                  </TouchableOpacity>
-
-                  <Button
-                    onPress={() => {
-                      navigate("Menu", {
-                        menu: true,
-                        store
-                      });
-                    }}
-                    style={styles.btn}
-                    activeOpacity={0.6}
-                  >
-                    VIEW MENU
-                  </Button>
-                </Fragment>
-              );
-            }
-          },
-          {
-            cardStyle: styles.cardStyle,
-            renderContent: () => (
-              <Fragment>
-                <Text category="h2" style={styles.title}>
-                  Hours
-                </Text>
-                {store.hours && renderHours(store.hours)}
-              </Fragment>
-            )
+    if (Platform.OS === "web") {
+      images = [store.storefrontImage];
+    } else {
+      images = [
+        {
+          source: {
+            uri: store && store.storefrontImage ? store.storefrontImage : null
           }
-        ]}
-      />
+        }
+      ];
+    }
 
-      {store && store.storefrontImage && (
-        <ImageView
-          images={images}
-          imageIndex={0}
-          isVisible={isImageModalVisible}
-          onClose={() => setIsImageModalVisible(false)}
-        />
-      )}
-    </ScrollView>
+    return (
+      <Lightbox
+        images={images}
+        isImageModalVisible={isImageModalVisible}
+        close={() => setIsImageModalVisible(false)}
+      />
+    );
+  }
+
+  function goBack() {
+    if (Platform.OS === "web") {
+      props.history.goBack();
+    } else {
+      props.navigation.goBack();
+    }
+  }
+
+  function onImagePress() {
+    setIsImageModalVisible(true);
+  }
+
+  function goToMenu() {
+    if (Platform.OS === "web") {
+      props.history.push(`/dispensary/${slugify(store.name)}/menu`, [
+        { store }
+      ]);
+    } else {
+      props.navigation.navigate("Menu", {
+        menu: true,
+        store
+      });
+    }
+  }
+
+  return (
+    <Suspense
+      fallback={
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="small" color={Colors.green} />
+        </View>
+      }
+    >
+      <Layout
+        store={store}
+        goBack={goBack}
+        onImagePress={onImagePress}
+        goToMenu={goToMenu}
+        renderLightbox={renderLightbox}
+        renderHours={renderHours}
+        {...props}
+      />
+    </Suspense>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: Colors.gray
-  },
-  dispensaryName: {
-    textAlign: "center",
-    marginBottom: 5,
-    fontSize: scale(28),
-    padding: isTablet() ? scale(10) : 0
-  },
-  detailHeader: {
-    marginTop: -50,
-    borderRadius: 25,
-    padding: 25,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "column",
-    backgroundColor: "white"
-  },
-  divider: {
-    marginTop: 10,
-    marginBottom: 10
-  },
-  hoursContainer: {
-    marginTop: 10,
-    marginBottom: 10
-  },
-  title: {
-    marginBottom: 5,
-    textAlign: "center",
-    fontSize: scale(24),
-    padding: isTablet() ? scale(5) : 0
-  },
-  informationContainer: {
-    marginTop: 5,
-    marginBottom: 10
-  },
   text: {
-    fontSize: scale(14),
+    fontSize: Platform.select({
+      ios: scale(14),
+      android: scale(14),
+      web: isBrowser ? 16 : scale(14)
+    }),
     padding: isTablet() ? scale(5) : 3
   },
-  btn: {
-    marginTop: 30,
-    marginLeft: 40,
-    marginRight: 40,
-    marginBottom: 30,
-    backgroundColor: Colors.medGreen,
-    borderColor: Colors.medGreen,
-    width: "85%"
-  },
-  cardStyle: {
+  loaderContainer: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center"
   }

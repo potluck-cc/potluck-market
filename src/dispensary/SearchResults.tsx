@@ -1,39 +1,70 @@
-import React, { Fragment, memo } from "react";
-import { View, StyleSheet, Text } from "react-native";
+import React, { Fragment, memo, useState } from "react";
+import { View, StyleSheet, Text, Platform } from "react-native";
 import { ProductList } from "./components";
+import { stackHistory, slugify, RNWebComponent } from "common";
 import { Topbar } from "common/components";
 import { scale } from "react-native-size-matters";
+import { partialApplication } from "@potluckmarket/ella";
+import { Modal } from "semantic-ui-react";
+import Product from "./Product";
 
-type SearchResultsProps = {
-  navigation: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >;
-};
+const SearchResults = (props: RNWebComponent) => {
+  const searchQuery =
+    Platform.OS === "web"
+      ? props.location.state[0].searchQuery
+      : props.navigation.getParam("searchQuery", null);
 
-const SearchResults = ({ navigation }: SearchResultsProps) => {
-  const searchQuery = navigation.getParam("searchQuery", null);
-  const products = navigation.getParam("products", []);
-  const store = navigation.getParam("store", {});
+  const store: import("@potluckmarket/louis").Store =
+    Platform.OS === "web"
+      ? props.location.state[0].store
+      : props.navigation.getParam("store", {});
+
+  const products: import("@potluckmarket/louis").InventoryItem[] =
+    Platform.OS === "web"
+      ? props.location.state[0].products
+      : props.navigation.getParam("products", null);
 
   const filteredProducts = products.length
     ? products.filter(product =>
-        product.product.searchField.includes(
+        product.product.slug.includes(
           searchQuery.replace(/ /g, "_").toLowerCase()
         )
       )
     : [];
 
+  const navigateToWebURL = partialApplication(
+    stackHistory,
+    props.history,
+    `/dispensary/${slugify(store.name)}/menu`
+  );
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeMenuItem, setActiveMenuItem] = useState<
+    import("@potluckmarket/louis").InventoryItem | null
+  >(null);
+
+  function openModal(item: import("@potluckmarket/louis").InventoryItem) {
+    setActiveMenuItem(item);
+    setModalOpen(true);
+  }
+
   return (
     <Fragment>
       <Topbar
-        navigation={navigation}
+        navigation={
+          Platform.OS === "web"
+            ? () => props.history.goBack()
+            : () => props.navigation.goBack()
+        }
         title={`Showing results for: ${searchQuery}`}
       />
       {filteredProducts.length ? (
         <ProductList
+          openModal={openModal}
           products={filteredProducts}
-          navigate={navigation.navigate}
+          navigate={
+            Platform.OS === "web" ? navigateToWebURL : props.navigation.navigate
+          }
           onScroll={() => {}}
           store={store}
         />
@@ -44,6 +75,27 @@ const SearchResults = ({ navigation }: SearchResultsProps) => {
           >{`No results found for "${searchQuery}"`}</Text>
         </View>
       )}
+
+      <Modal
+        open={modalOpen}
+        closeIcon
+        onClose={() => setModalOpen(false)}
+        scrolling
+      >
+        {activeMenuItem && (
+          <Modal.Content>
+            <Product
+              {...{
+                history: props.history,
+                location: props.location,
+                match: props.match
+              }}
+              store={store}
+              product={activeMenuItem}
+            />
+          </Modal.Content>
+        )}
+      </Modal>
     </Fragment>
   );
 };

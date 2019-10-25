@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState, Fragment } from "react";
+import React, { memo, useEffect, useState, useContext, Fragment } from "react";
 import {
   ActivityIndicator,
   View,
@@ -7,20 +7,24 @@ import {
   Platform
 } from "react-native";
 import { useLazyAppSyncQuery, OperationType } from "@potluckmarket/ella";
-import client from "client";
 import { ListStores } from "queries";
 import { List } from "react-native-ui-kitten";
-import { Dimensions, Colors, isIphoneXorAbove } from "common";
+import {
+  Dimensions,
+  Colors,
+  isIphoneXorAbove,
+  slugify,
+  useDimensions,
+  RNWebComponent,
+  isTablet
+} from "common";
 import { Card, TextHeader } from "common/components";
+import { isBrowser } from "react-device-detect";
+import AppContext from "appcontext";
 
-type DispensariesListProps = {
-  navigation: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >;
-};
+function DispensaryList(props: RNWebComponent) {
+  const { client } = useContext(AppContext);
 
-function DispensaryList({ navigation: { navigate } }: DispensariesListProps) {
   const [dispensaries, loading, fetchDispensaries] = useLazyAppSyncQuery({
     client,
     operationType: OperationType.query,
@@ -29,6 +33,16 @@ function DispensaryList({ navigation: { navigate } }: DispensariesListProps) {
   });
 
   const [refreshing, setRefreshing] = useState(false);
+
+  const { dimensions, widthToDP } = useDimensions();
+
+  const cardWidth = Platform.select({
+    ios: widthToDP("80%"),
+    android: widthToDP("80%"),
+    web: isBrowser && !isTablet() ? widthToDP("30%") : widthToDP("75%")
+  });
+
+  const numOfItemsPerColumn = Math.floor(dimensions.width / (cardWidth + 40));
 
   useEffect(() => {
     initialize();
@@ -55,10 +69,23 @@ function DispensaryList({ navigation: { navigate } }: DispensariesListProps) {
         imageSource={image}
         title={item.name}
         description={`${item.city}, ${item.state}`}
+        resizeMode={!item.storefrontImage && item.logo ? "contain" : null}
+        containerStyle={{
+          width: cardWidth,
+          marginHorizontal: 10,
+          marginVertical: 10,
+          backgroundColor: !item.storefrontImage && item.logo ? "white" : null
+        }}
         onPress={() => {
-          navigate("Store", {
-            store: item
-          });
+          if (Platform.OS === "web") {
+            props.history.push(`/dispensary/${slugify(item.name)}`, [
+              { store: item }
+            ]);
+          } else {
+            props.navigation.navigate("Store", {
+              store: item
+            });
+          }
         }}
       />
     );
@@ -90,12 +117,27 @@ function DispensaryList({ navigation: { navigate } }: DispensariesListProps) {
         ListHeaderComponent={() => (
           <TextHeader title="Medical Cannabis" subtitle="Dispensaries" />
         )}
-        data={dispensaries.listStores ? dispensaries.listStores.items : []}
+        data={
+          dispensaries && dispensaries.listStores
+            ? dispensaries.listStores.items
+            : []
+        }
+        // data={stuff}
         renderItem={renderItem}
         onRefresh={onRefresh}
         refreshing={refreshing}
         ListFooterComponent={renderListFooterComponent}
         contentContainerStyle={styles.container}
+        numColumns={Platform.select({
+          ios: 1,
+          android: 1,
+          web: isBrowser ? numOfItemsPerColumn : 1
+        })}
+        key={Platform.select({
+          ios: 1,
+          android: 1,
+          web: isBrowser ? numOfItemsPerColumn : 1
+        })}
       />
     </Fragment>
   );
@@ -104,12 +146,14 @@ function DispensaryList({ navigation: { navigate } }: DispensariesListProps) {
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
+    justifyContent: Platform.select({
+      web: "space-around"
+    }),
     paddingTop: Platform.select({
       android: 30,
       ios: isIphoneXorAbove() ? 50 : 30
     }),
-    backgroundColor: Colors.eggShell,
-    flex: 1
+    backgroundColor: Colors.eggShell
   },
   listItemImageBackground: {
     width: Dimensions.width,

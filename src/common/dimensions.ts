@@ -24,8 +24,30 @@ function percentageToDP(
   return PixelRatio.roundToNearestPixel((measurement * factor) / 100);
 }
 
+export function isPortrait({ width, height }: DimensionsInterface) {
+  if (width < height) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export function isLandscape({ width, height }: DimensionsInterface) {
+  if (width > height) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 export function useDimensions() {
   const [dimensions, updateDimensions] = useState(D.get("window"));
+
+  const [landscape, setIsOrientationLandscape] = useState(
+    isLandscape(dimensions)
+  );
+
+  const [portrait, setIsOrientationPortrait] = useState(isPortrait(dimensions));
 
   useEffect(() => {
     D.addEventListener("change", handleDimensionsChange);
@@ -37,6 +59,8 @@ export function useDimensions() {
 
   function handleDimensionsChange(dims) {
     updateDimensions(dims.window);
+    setIsOrientationLandscape(dims.window);
+    setIsOrientationPortrait(dims.window);
   }
 
   const widthToDP = partialApplication(percentageToDP, dimensions.width);
@@ -46,6 +70,8 @@ export function useDimensions() {
   return {
     dimensions,
     widthToDP,
-    heightToDP
+    heightToDP,
+    isLandscape: landscape,
+    isPortrait: portrait
   };
 }

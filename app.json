@@ -2,11 +2,11 @@
   "expo": {
     "name": "Potluck Market",
     "slug": "Potluck",
-    "description": "An app to help NJMMP's make informed choices on medical cannabis.",
+    "description": "We sell pot on the internet.",
     "privacy": "unlisted",
     "sdkVersion": "34.0.0",
     "platforms": ["ios", "android", "web"],
-    "version": "1.5.0",
+    "version": "1.5.2",
     "orientation": "portrait",
     "icon": "./assets/images/potluck_logo_txt_large.png",
     "splash": {
@@ -20,7 +20,7 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "bundleIdentifier": "com.potluckmarket.Potluck",
-      "buildNumber": "1.5.0",
+      "buildNumber": "1.5.2",
       "icon": "./assets/images/potluck_logo_txt_large.png",
       "supportsTablet": true,
       "isTabletOnly": false,
@@ -34,7 +34,7 @@
     },
     "android": {
       "package": "com.potluckmarket.Potluck",
-      "versionCode": 4,
+      "versionCode": 5,
       "icon": "./assets/images/potluck_logo_txt_large.png",
       "splash": {
         "backgroundColor": "#46B060",

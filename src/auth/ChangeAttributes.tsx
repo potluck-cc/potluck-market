@@ -8,22 +8,23 @@ import { Icon } from "react-native-elements";
 import { useAuth, useForm } from "@potluckmarket/ella";
 import { UpdateUser } from "mutations";
 import { Auth } from "aws-amplify";
-import client from "../client";
 import AppContext from "appcontext";
 import { AvoidKeyboard, ButtonHeader } from "common/components";
 import { Colors } from "common";
 
 type Props = {
-  navigation: import("react-navigation").NavigationScreenProp<
+  navigation?: import("react-navigation").NavigationScreenProp<
     import("react-navigation").NavigationState,
     import("react-navigation").NavigationParams
   >;
 };
 
-function ChangeUsername({ navigation: { navigate, goBack } }: Props) {
-  const { currentAuthenticatedUser, setCurrentAuthenticatedUser } = useContext(
-    AppContext
-  );
+function ChangeUsername(props: Props) {
+  const {
+    currentAuthenticatedUser,
+    setCurrentAuthenticatedUser,
+    client
+  } = useContext(AppContext);
 
   const { loading, error, handleChangeAttribute, handleStateChange } = useAuth(
     Auth
@@ -129,11 +130,12 @@ function ChangeUsername({ navigation: { navigate, goBack } }: Props) {
   return (
     <AvoidKeyboard autoDismiss={false} offset={getKeyboardOffset}>
       <View style={styles.container}>
-        <ButtonHeader
-          onBackBtnPress={() => goBack(null)}
-          containerStyle={{ alignSelf: "flex-start" }}
-        />
-
+        {Platform.OS !== "web" && (
+          <ButtonHeader
+            onBackBtnPress={() => props.navigation.goBack(null)}
+            containerStyle={{ alignSelf: "flex-start" }}
+          />
+        )}
         <Input
           size="large"
           label="Email"

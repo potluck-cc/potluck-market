@@ -13,7 +13,8 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   ViewProps,
-  ViewStyle
+  ViewStyle,
+  View
 } from "react-native";
 
 export interface AvoidKeyboardProps extends ViewProps {
@@ -102,6 +103,11 @@ export default class AvoidKeyboard extends React.Component<AvoidKeyboardProps> {
   };
 
   public render(): React.ReactElement<ViewProps> {
+
+    if (Platform.OS === "web") {
+      return <View>{this.props.children}</View>
+    }
+    
     const { style, autoDismiss, ...restProps } = this.props;
     const componentStyle: ViewStyle = this.getComponentStyle(style);
 

@@ -72,7 +72,7 @@ class ProgressChart extends AbstractChart {
             height={this.props.height}
             rx={borderRadius}
             ry={borderRadius}
-            fill="url(#backgroundGradient)"
+            fill="rgba(0, 0, 0, 0)"
           />
           <G x={this.props.width / 2} y={this.props.height / 2}>
             <G>

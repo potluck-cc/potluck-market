@@ -3,17 +3,17 @@ import Amplify, { Auth } from "aws-amplify";
 import awsConfig from "./aws-exports";
 import { mapping, light as lightTheme } from "@eva-design/eva";
 import { ApplicationProvider } from "react-native-ui-kitten";
-import Navigation from "navigation";
+import Navigator from "./src/navigation/Navigator";
 import AppContext from "appcontext";
 import * as Permissions from "expo-permissions";
 import { AppLoading, Notifications } from "expo";
 import { Asset } from "expo-asset";
-
 import { appsyncFetch, OperationType } from "@potluckmarket/ella";
-import client from "client";
 import { GetUser, GetDoctor } from "queries";
 import { UpdateUser, CreateUser, UpdateDoctor } from "mutations";
 import { isUserADoctor } from "common";
+import { determineClient } from "client";
+import { Platform } from "react-native";
 
 Amplify.configure(awsConfig);
 
@@ -25,6 +25,7 @@ export default function App() {
   >(null);
 
   const [appReady, setAppReady] = useState(false);
+  const [client, setClient] = useState(null);
 
   async function loadResources() {
     return Promise.all([
@@ -33,7 +34,8 @@ export default function App() {
         require("./assets/images/Flower.png"),
         require("./assets/images/Concentrate.png"),
         require("./assets/images/Topical.png"),
-        require("./assets/images/potluckmed_android.png")
+        require("./assets/images/potluckmed_android.png"),
+        require("./assets/images/joints.png")
       ])
     ]);
   }
@@ -49,10 +51,15 @@ export default function App() {
       } else {
         currUser = await Auth.currentAuthenticatedUser();
       }
+      isADoctor = await isUserADoctor(currUser);
 
-      expoPushToken = await registerForPushNotificationsAsync();
-      isADoctor = isUserADoctor(currUser);
+      if (Platform.OS === "web") {
+        expoPushToken = await registerForPushNotificationsAsync();
+      }
     } catch {}
+
+    const client = await determineClient(currUser);
+    await setClient(client);
 
     try {
       if (currUser) {
@@ -69,25 +76,29 @@ export default function App() {
             })) || null;
 
           if (getDoctor) {
-            if (!getDoctor.token || getDoctor.token !== expoPushToken) {
+            if (
+              !getDoctor.marketToken ||
+              getDoctor.marketToken !== expoPushToken
+            ) {
               if (expoPushToken) {
-                // await appsyncFetch({
-                //   client,
-                //   document: UpdateDoctor,
-                //   operationType: OperationType.mutation,
-                //   variables: {
-                //     id: getDoctor.id,
-                //     token: expoPushToken
-                //   }
-                // });
+                await appsyncFetch({
+                  client,
+                  document: UpdateDoctor,
+                  operationType: OperationType.mutation,
+                  variables: {
+                    id: getDoctor.id,
+                    marketToken: expoPushToken
+                  }
+                });
 
                 await setCurrentAuthenticatedUser({
-                  ...getDoctor,
-                  token: expoPushToken
+                  ...getDoctor
                 });
+              } else {
+                await setCurrentAuthenticatedUser({ ...getDoctor });
               }
             } else {
-              await setCurrentAuthenticatedUser(getDoctor);
+              await setCurrentAuthenticatedUser({ ...getDoctor });
             }
           } else {
             setCurrentAuthenticatedUser({
@@ -117,20 +128,22 @@ export default function App() {
             })) || null;
 
           if (getUser) {
-            if (!getUser.token || getUser.token !== expoPushToken) {
-              // await appsyncFetch({
-              //   client,
-              //   document: UpdateUser,
-              //   operationType: OperationType.mutation,
-              //   variables: {
-              //     id: getUser.id,
-              //     token: expoPushToken
-              //   }
-              // });
+            if (
+              (!getUser.marketToken && expoPushToken) ||
+              (getUser.marketToken !== expoPushToken && expoPushToken)
+            ) {
+              await appsyncFetch({
+                client,
+                document: UpdateUser,
+                operationType: OperationType.mutation,
+                variables: {
+                  id: getUser.id,
+                  marketToken: expoPushToken
+                }
+              });
 
               await setCurrentAuthenticatedUser({
-                ...getUser,
-                token: expoPushToken
+                ...getUser
               });
             } else {
               await setCurrentAuthenticatedUser(getUser);
@@ -144,7 +157,7 @@ export default function App() {
                 variables: {
                   id: currUser.attributes.sub,
                   phone: currUser.attributes.phone_number,
-                  token: expoPushToken,
+                  marketToken: expoPushToken,
                   firstname: currUser.attributes["custom:firstname"],
                   lastname: currUser.attributes["custom:lastname"],
                   email: currUser.attributes["custom:email"]
@@ -153,8 +166,7 @@ export default function App() {
 
             if (createUser) {
               await setCurrentAuthenticatedUser({
-                ...createUser,
-                token: expoPushToken
+                ...createUser
               });
             } else {
               await setCurrentAuthenticatedUser({
@@ -170,6 +182,7 @@ export default function App() {
         }
       }
     } catch {
+      console.log("errrr");
       if (currUser) {
         if (isADoctor) {
           setCurrentAuthenticatedUser({
@@ -189,11 +202,9 @@ export default function App() {
           setCurrentAuthenticatedUser({
             id: currUser.attributes.sub,
             phone: currUser.attributes.phone_number,
-            token: expoPushToken,
             firstname: currUser.attributes["custom:firstname"],
             lastname: currUser.attributes["custom:lastname"],
-            email: currUser.attributes["custom:email"],
-            __typename: isADoctor ? "Doctor" : "User"
+            email: currUser.attributes["custom:email"]
           });
         }
       }
@@ -234,10 +245,11 @@ export default function App() {
         value={{
           currentAuthenticatedUser,
           setCurrentAuthenticatedUser,
-          initializeApp: initialize
+          initializeApp: initialize,
+          client
         }}
       >
-        <Navigation />
+        <Navigator />
       </AppContext.Provider>
     </ApplicationProvider>
   );

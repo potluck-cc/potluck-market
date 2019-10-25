@@ -12,7 +12,7 @@ module.exports = function(api) {
             dispensary: "./src/dispensary/index.ts",
             common: "./src/common",
             "common/components": "./src/common/components/index.ts",
-            navigation: "./src/navigation/index.tsx",
+            // navigation: "./src/navigation/index.ts",
             queries: "./src/api/queries/index.ts",
             mutations: "./src/api/mutations/index.ts",
             subscriptions: "./src/api/subscriptions/index.ts",

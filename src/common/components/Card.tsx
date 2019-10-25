@@ -12,11 +12,13 @@ import {
   ImageSourcePropType,
   ImageResizeMode
 } from "react-native";
-import { Colors, Dimensions, isTablet } from "common";
+import { Colors, Dimensions, isTablet, useDimensions } from "common";
 import { Text } from "react-native-ui-kitten";
 import { Transition } from "react-navigation-fluid-transitions";
 import { Image as CacheImage } from "react-native-expo-image-cache";
-import { scale, verticalScale } from "react-native-size-matters";
+import { scale } from "react-native-size-matters";
+import { isBrowser } from "react-device-detect";
+import { isLandscape } from "../dimensions";
 
 export enum CardSize {
   small = "small",
@@ -25,8 +27,8 @@ export enum CardSize {
 
 type CardProps = {
   onPress?: (event: GestureResponderEvent) => void;
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   imageSource?: string;
   containerStyle?: ViewStyle;
   headerContainerStyle?: ViewStyle;
@@ -39,34 +41,6 @@ type CardProps = {
   borderRadius?: number;
   localImage?: ImageSourcePropType;
   resizeMode?: ImageResizeMode;
-};
-
-const smallCardStyles = {
-  container: {
-    minHeight: 0,
-    marginTop: 7.5,
-    marginBottom: 7.5,
-    backgroundColor: "white",
-    shadowOffset: { width: 1, height: 0 },
-    shadowColor: "black",
-    shadowOpacity: 0.2,
-    elevation: 1,
-    borderRadius: 15,
-    height: scale(250),
-    width: scale(170)
-  },
-  header: {
-    height: "50%",
-    width: "100%",
-    alignItems: "center",
-    overflow: "hidden",
-    borderTopRightRadius: 15,
-    borderTopLeftRadius: 15,
-    borderColor: "transparent"
-  },
-  details: {
-    height: "50%"
-  }
 };
 
 export default function Card({
@@ -84,8 +58,40 @@ export default function Card({
   cardSize = CardSize.large,
   borderRadius = 15,
   localImage,
-  resizeMode = "cover"
+  resizeMode
 }: CardProps) {
+  const { widthToDP, heightToDP, dimensions } = useDimensions();
+
+  const smallCardStyles = {
+    container: {
+      minHeight: 0,
+      marginTop: 7.5,
+      marginBottom: 7.5,
+      backgroundColor: "white",
+      borderColor: "#ddd",
+      shadowOffset: { width: 1, height: 0 },
+      shadowColor: "black",
+      shadowOpacity: 0.2,
+      borderRadius: 15,
+      height: scale(250),
+      width: widthToDP("45%"),
+      elevation: Platform.select({
+        android: 5
+      })
+    },
+    header: {
+      height: "50%",
+      width: "100%",
+      alignItems: "center",
+      overflow: "hidden",
+      borderTopRightRadius: 15,
+      borderTopLeftRadius: 15
+    },
+    details: {
+      height: "50%"
+    }
+  };
+
   const headerStyles =
     cardSize === CardSize.small ? { ...smallCardStyles.header } : {};
 
@@ -97,20 +103,37 @@ export default function Card({
 
   const styles = StyleSheet.create({
     container: {
-      minHeight: verticalScale(350),
-      height: "80%",
+      minHeight: Platform.select({
+        web: isBrowser ? 505 : heightToDP("70%")
+        // ios: verticalScale(350),
+        // android: verticalScale(350)
+      }),
+      height: Platform.select({
+        web: heightToDP("70%"),
+        ios: isLandscape ? heightToDP("60%") : heightToDP("40%"),
+        android: heightToDP("40%")
+      }),
+      width: Platform.select({
+        ios: Dimensions.width / 1.5,
+        android: Dimensions.width / 1.5,
+        web: widthToDP("80%")
+      }),
+      maxWidth: 1024,
       borderRadius: borderRadius,
       borderColor: "transparent",
-      width: Dimensions.width / 1.5,
       shadowColor: "#000",
+      borderLeftWidth: Platform.OS === "web" ? null : 1,
+      borderRightWidth: Platform.OS === "web" ? null : 1,
       shadowOffset: {
         width: 0,
         height: 6
       },
       shadowOpacity: 0.39,
       shadowRadius: 8.3,
-      elevation: 13,
       zIndex: 999,
+      elevation: Platform.select({
+        android: 9
+      }),
       ...containerStyles,
       ...containerStyle
     },
@@ -150,8 +173,12 @@ export default function Card({
     },
     title: {
       marginBottom: scale(10),
-      fontSize: scale(16),
-      padding: isTablet() ? scale(5) : 0,
+      fontSize: Platform.select({
+        ios: scale(16),
+        android: scale(16),
+        web: scale(16)
+      }),
+      padding: isTablet() ? (isLandscape(dimensions) ? 0 : scale(5)) : 0,
       width: "100%",
       textAlign: "center",
       lineHeight: scale(20),
@@ -173,17 +200,21 @@ export default function Card({
         const uri = imageSource;
         const preview = { uri: imageSource };
 
+        if (Platform.OS === "web") {
+          return (
+            <Image
+              source={{ uri }}
+              style={styles.headerImage}
+              resizeMode={resizeMode ? resizeMode : "cover"}
+            />
+          );
+        }
+
         return (
           <CacheImage
             {...{ preview, uri }}
             style={styles.headerImage}
-            resizeMode={
-              resizeMode
-                ? resizeMode
-                : cardSize === CardSize.small
-                ? "contain"
-                : "cover"
-            }
+            resizeMode={resizeMode ? resizeMode : "cover"}
           />
         );
       } else {
@@ -192,9 +223,9 @@ export default function Card({
             source={
               localImage
                 ? localImage
-                : require("assets/images/potluck_default.png")
+                : require("assets/images/potluck_logo.png")
             }
-            resizeMode={resizeMode}
+            resizeMode={resizeMode ? resizeMode : "cover"}
             style={styles.headerImage}
           />
         );
@@ -217,13 +248,19 @@ export default function Card({
       disabled={onPress ? false : true}
     >
       <View style={styles.header}>{renderHeaderImage()}</View>
+
       <View style={styles.details}>
-        <Text category="s1" style={styles.title}>
-          {title}
-        </Text>
-        <Text category="c1" style={styles.description}>
-          {description}
-        </Text>
+        {title && (
+          <Text category="s1" style={styles.title}>
+            {title}
+          </Text>
+        )}
+
+        {description && (
+          <Text category="c1" style={styles.description}>
+            {description}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );

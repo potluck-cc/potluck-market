@@ -18,12 +18,12 @@ type Props = {
 };
 
 export default function Topbar({
-  navigation: { goBack },
+  navigation,
   title = "Potluck Market"
 }: Props) {
   function renderLeftControl() {
     return (
-      <TouchableOpacity onPress={() => goBack(null)}>
+      <TouchableOpacity onPress={() => navigation()}>
         <Icon
           name="keyboard-backspace"
           type="material-community"

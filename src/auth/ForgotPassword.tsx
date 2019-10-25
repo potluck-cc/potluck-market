@@ -1,5 +1,6 @@
-import React, { useEffect } from "react";
-import { View, ActivityIndicator } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, ActivityIndicator, Platform } from "react-native";
+import Confirm from "./Confirm";
 
 import styles from "./defaultStyles";
 import { Input, Button, Text } from "react-native-ui-kitten";
@@ -7,17 +8,11 @@ import { Icon } from "react-native-elements";
 
 import { useAuth } from "@potluckmarket/ella";
 import { Auth } from "aws-amplify";
-import { Colors } from "common";
+import { Colors, RNWebComponent } from "common";
 import { ButtonHeader } from "common/components";
+import { isBrowser } from "react-device-detect";
 
-type Props = {
-  navigation: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >;
-};
-
-function ForgotPassword({ navigation: { navigate, goBack, getParam } }: Props) {
+function ForgotPassword(props: RNWebComponent) {
   const {
     handleForgotPasswordRequest,
     loading,
@@ -28,6 +23,8 @@ function ForgotPassword({ navigation: { navigate, goBack, getParam } }: Props) {
     normalizePhoneStringInput
   } = useAuth(Auth);
 
+  const [confirm, setConfirm] = useState(false);
+
   useEffect(() => {
     initialize();
   }, []);
@@ -37,19 +34,32 @@ function ForgotPassword({ navigation: { navigate, goBack, getParam } }: Props) {
     const username = await retrieveData("username");
 
     if (username) {
-      handleStateChange(
-        "username",
-        typeof username === "string" ? username : ""
-      );
+      handleStateChange("username", username);
     }
+  }
+
+  if (confirm) {
+    return (
+      <Confirm
+        navigation={props.navigation}
+        {...{
+          history: props.history,
+          location: props.location,
+          match: props.match
+        }}
+        setConfirm={setConfirm}
+      />
+    );
   }
 
   return (
     <View style={styles.container}>
-      <ButtonHeader
-        onBackBtnPress={() => goBack(null)}
-        containerStyle={{ alignSelf: "flex-start" }}
-      />
+      {Platform.OS !== "web" && (
+        <ButtonHeader
+          onBackBtnPress={() => props.navigation.goBack(null)}
+          containerStyle={{ alignSelf: "flex-start" }}
+        />
+      )}
 
       <Input
         size="large"
@@ -57,7 +67,13 @@ function ForgotPassword({ navigation: { navigate, goBack, getParam } }: Props) {
         onChangeText={text => handleStateChange("username", text)}
         style={styles.input}
         value={username}
-        keyboardType="numeric"
+        keyboardType={
+          Platform.OS === "web" && isBrowser
+            ? "numeric"
+            : Platform.OS !== "web"
+            ? "numeric"
+            : null
+        }
         returnKeyType="done"
         icon={({ tintColor }) => {
           return (
@@ -79,13 +95,18 @@ function ForgotPassword({ navigation: { navigate, goBack, getParam } }: Props) {
             handleForgotPasswordRequest(
               {
                 username: americanizePhoneNumber(
-                  normalizePhoneStringInput(username)
+                  normalizePhoneStringInput(String(username))
                 )
               },
               async () => {
                 const { storeData } = await import("@potluckmarket/ella");
                 await storeData("forgotPassword", "true");
-                navigate("Confirm");
+
+                if (Platform.OS === "web") {
+                  setConfirm(true);
+                } else {
+                  props.navigation.navigate("Confirm");
+                }
               },
               error =>
                 handleStateChange(

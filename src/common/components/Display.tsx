@@ -5,11 +5,15 @@ import {
   ScrollView,
   StyleSheet,
   ViewStyle,
-  Image
+  Platform,
+  Image as DefaultImage
 } from "react-native";
 import { Transition } from "react-navigation-fluid-transitions";
 import { Image as CacheImage } from "react-native-expo-image-cache";
-import { useDimensions, Colors, isTablet, isIphoneXorAbove } from "common";
+import { useDimensions, Colors, isIphoneXorAbove, isTablet } from "common";
+import { isMobile } from "react-device-detect";
+import Svg, { Circle, G, Defs, ClipPath, Image } from "react-native-svg";
+import { Icon } from "react-native-elements";
 
 type DisplayProps = {
   onImagePress: () => void;
@@ -18,12 +22,11 @@ type DisplayProps = {
   imageSource: string;
   imageSmall?: boolean;
   transition?: boolean;
-  cards: Card[];
-};
-
-type Card = {
-  cardStyle?: ViewStyle;
   renderContent: () => JSX.Element;
+  onBtnPress?: () => void;
+  renderMainBtn?: boolean;
+  aspectRatio?: string;
+  renderSvg?: boolean;
 };
 
 function Display({
@@ -31,165 +34,232 @@ function Display({
   imagePressDisabled,
   renderHeader,
   imageSource,
-  imageSmall = false,
   transition = false,
-  cards
+  renderContent,
+  onBtnPress = () => {},
+  renderMainBtn = false,
+  aspectRatio,
+  renderSvg = false
 }: DisplayProps) {
-  const { dimensions, heightToDP } = useDimensions();
+  const {
+    heightToDP,
+    widthToDP,
+    dimensions: { height }
+  } = useDimensions();
 
-  const bottomTabPadding = isIphoneXorAbove() ? 80 : 48;
+  // const bottomTabPadding =
+  //   Platform.OS === "web" ? 0 : isIphoneXorAbove() ? 80 : 48;
 
-  const styles = StyleSheet.create({
-    imageHeader: {
-      width: dimensions.width,
-      height: heightToDP("100%") - bottomTabPadding
-    },
-    imageHeaderSmall: {
-      height: isTablet() ? dimensions.width / 1.5 : dimensions.width,
-      width: dimensions.width
-    },
-    singleCardContainer: {
-      position: "absolute",
-      bottom: 0,
-      padding: 15,
-      width: "100%",
-      backgroundColor: "transparent"
-    },
-    cardContainer: {
-      position: "absolute",
-      bottom: 0,
-      paddingBottom: 15,
-      width: dimensions.width,
-      backgroundColor: "transparent"
-    },
-    card: {
-      backgroundColor: "#fff",
-      borderRadius: 25,
-      width: cards.length > 1 ? dimensions.width - 50 : "100%",
-      height: heightToDP("50%"),
-      marginLeft: cards.length > 1 ? 15 : 0,
-      borderWidth: 1,
-      borderColor: Colors.gray
-    }
-  });
-
-  function renderCards() {
-    return cards.map((card, index) => {
-      return (
-        <View
-          key={index}
-          style={[
-            styles.card,
-            card.cardStyle,
-            { marginRight: index === cards.length - 1 ? 15 : 0 }
-          ]}
-        >
-          {card.renderContent()}
-        </View>
-      );
-    });
-  }
+  const styles = StyleSheet.create({});
 
   function DisplayContainer({ children }) {
-    if (transition) {
-      return <Transition shared={imageSource}>{children}</Transition>;
-    } else {
-      return <View>{children}</View>;
-    }
-  }
-
-  function renderImageHeader() {
-    if (imageSource) {
+    if (transition && Platform.OS !== "web") {
       return (
-        <CacheImage
-          {...{
-            preview: { uri: imageSource },
-            uri: imageSource
-          }}
-          style={imageSmall ? styles.imageHeaderSmall : styles.imageHeader}
-        />
-      );
-    } else {
-      return (
-        <Image
-          style={imageSmall ? styles.imageHeaderSmall : styles.imageHeader}
-          source={require("assets/images/potluck_default.png")}
-        />
-      );
-    }
-  }
-
-  function renderCardSection() {
-    if (transition) {
-      return (
-        <Transition anchor={imageSource} appear="bottom">
-          {cards.length > 1 ? (
-            <ScrollView
-              horizontal
-              pagingEnabled
-              style={imageSmall ? { marginTop: -100 } : styles.cardContainer}
-              showsHorizontalScrollIndicator={false}
-            >
-              {renderCards()}
-            </ScrollView>
-          ) : (
-            <View style={styles.singleCardContainer}>{renderCards()}</View>
-          )}
+        <Transition shared={imageSource}>
+          <View style={{ backgroundColor: "white" }}>{children}</View>
         </Transition>
       );
     } else {
-      return cards.length > 1 ? (
-        <ScrollView
-          horizontal
-          pagingEnabled
-          style={imageSmall ? { marginTop: -100 } : styles.cardContainer}
-          showsHorizontalScrollIndicator={false}
-        >
-          {renderCards()}
-        </ScrollView>
-      ) : (
-        <View style={styles.singleCardContainer}>{renderCards()}</View>
-      );
+      return <View style={{ backgroundColor: "white" }}>{children}</View>;
     }
   }
 
-  function renderContent() {
-    if (imageSmall) {
+  function renderImage() {
+    if (!renderSvg) {
+      if (Platform.OS !== "web") {
+        const uri = imageSource;
+        const preview = { uri: imageSource };
+        return (
+          <CacheImage
+            {...{ preview, uri }}
+            style={{ width: widthToDP("80%"), height: heightToDP("30%") }}
+            resizeMode="contain"
+          />
+        );
+      } else {
+        return (
+          <DefaultImage
+            source={{ uri: imageSource }}
+            style={{ width: widthToDP("80%"), height: heightToDP("30%") }}
+            resizeMode="contain"
+          />
+        );
+      }
+    }
+
+    if (Platform.OS === "web") {
       return (
-        <View style={{ backgroundColor: Colors.gray, paddingBottom: 10 }}>
-          <TouchableOpacity
-            onPress={onImagePress}
-            activeOpacity={0.8}
-            disabled={imagePressDisabled}
+        <svg
+          width="100%"
+          height={heightToDP("60%")}
+          style={{ filter: "drop-shadow(-1px 6px 3px rgba(50, 50, 0, 0.5))" }}
+        >
+          <defs>
+            <clipPath id="clip">
+              <circle
+                cx="50%"
+                cy={heightToDP("15%")}
+                r={widthToDP("60%")}
+              ></circle>
+            </clipPath>
+          </defs>
+
+          <g
+            style={{
+              clipPath: "url(#clip)"
+            }}
           >
-            {renderImageHeader()}
-
-            {renderHeader()}
-          </TouchableOpacity>
-
-          {renderCardSection()}
-        </View>
+            <image
+              clipPath="url(#clip)"
+              height="100%"
+              width="100%"
+              preserveAspectRatio={aspectRatio ? aspectRatio : "xMidYMid slice"}
+              xlinkHref={
+                imageSource
+                  ? imageSource
+                  : require("assets/images/potluck_logo.png")
+              }
+            />
+          </g>
+        </svg>
       );
     } else {
       return (
-        <View>
-          <TouchableOpacity
-            onPress={onImagePress}
-            activeOpacity={0.8}
-            disabled={imagePressDisabled}
-          >
-            {renderImageHeader()}
-          </TouchableOpacity>
+        <Svg
+          width="100%"
+          height={heightToDP("60%")}
+          style={{
+            shadowColor: Colors.darkGreen,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.8,
+            shadowRadius: 4
+          }}
+        >
+          <Defs>
+            <ClipPath id="clip">
+              {/* <Circle cx="50%" cy="30%" r="250" /> */}
+              {/* <Circle cx="50%" cy="25%" r="420" /> */}
+              <Circle
+                cx="50%"
+                cy={
+                  isTablet()
+                    ? heightToDP("6%")
+                    : isIphoneXorAbove()
+                    ? heightToDP("18%")
+                    : heightToDP("20%")
+                }
+                r={isTablet() ? widthToDP("60%") : widthToDP("65%")}
+              />
+            </ClipPath>
+          </Defs>
 
-          {renderHeader()}
-
-          {renderCardSection()}
-        </View>
+          {Platform.OS === "ios" ? (
+            <G clipPath="url(#clip)">
+              <Image
+                x="0"
+                y="0"
+                href={
+                  imageSource
+                    ? { uri: imageSource }
+                    : require("assets/images/potluck_logo.png")
+                }
+                clipPath="#clip"
+                height="100%"
+                width="100%"
+                preserveAspectRatio={
+                  aspectRatio ? aspectRatio : "xMidYMid slice"
+                }
+              />
+            </G>
+          ) : (
+            <Image
+              x="0"
+              y="0"
+              href={
+                imageSource
+                  ? { uri: imageSource }
+                  : require("assets/images/potluck_default.png")
+              }
+              clipPath="#clip"
+              height="100%"
+              width="100%"
+              preserveAspectRatio={aspectRatio ? aspectRatio : "xMidYMid slice"}
+              style={{
+                elevation: Platform.select({
+                  android: 9
+                })
+              }}
+            />
+          )}
+        </Svg>
       );
     }
   }
 
-  return <DisplayContainer>{renderContent()}</DisplayContainer>;
+  function renderDisplay() {
+    return (
+      <View
+        style={{
+          flex: Platform.select({
+            ios: 1,
+            android: 1
+          }),
+          width: Platform.select({
+            ios: widthToDP("100%")
+          }),
+          paddingBottom: 5,
+          backgroundColor: "white"
+        }}
+      >
+        <TouchableOpacity
+          onPress={onImagePress}
+          activeOpacity={0.8}
+          disabled={imagePressDisabled}
+          style={{
+            alignItems: !renderSvg ? "center" : null
+          }}
+        >
+          {renderImage()}
+        </TouchableOpacity>
+
+        {renderMainBtn && (
+          <TouchableOpacity
+            onPress={() => onBtnPress()}
+            style={{
+              marginTop: renderSvg ? -height / 7 : null,
+              backgroundColor: Colors.medGreen,
+              borderColor: Colors.medGreen,
+              width: 100,
+              height: 100,
+              alignSelf: "center",
+              borderRadius: 200,
+              shadowColor: Colors.darkGreen,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.8,
+              shadowRadius: 2,
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 999,
+              elevation: Platform.select({
+                android: 5
+              })
+            }}
+            activeOpacity={0.6}
+          >
+            <Icon name="align-right" size={60} color="white" type="feather" />
+          </TouchableOpacity>
+        )}
+
+        {renderContent()}
+
+        {renderHeader()}
+      </View>
+    );
+  }
+
+  return <DisplayContainer>{renderDisplay()}</DisplayContainer>;
 }
 
-export default Display;
+const Component = Platform.OS === "web" ? Display : Display;
+
+export default Component;

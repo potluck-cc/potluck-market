@@ -10,8 +10,7 @@ import {
 import { Icon } from "react-native-elements";
 import { Colors } from "common";
 
-import { Menu, Product, SearchResults, DispensaryTransition } from "dispensary";
-
+import { DispensaryTransition, Menu, Product, SearchResults } from "dispensary";
 import {
   Signin,
   Signup,

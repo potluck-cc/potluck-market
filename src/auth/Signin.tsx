@@ -1,5 +1,10 @@
 import React, { useEffect, useContext } from "react";
-import { View, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  Platform
+} from "react-native";
 
 import styles from "./defaultStyles";
 import { Input, Button, Text } from "react-native-ui-kitten";
@@ -11,16 +16,17 @@ import { Auth } from "aws-amplify";
 import { Colors } from "common";
 import { ButtonHeader } from "common/components";
 import AppContext from "appcontext";
+import { isBrowser } from "react-device-detect";
 
 type Props = {
-  navigation: import("react-navigation").NavigationScreenProp<
+  navigation?: import("react-navigation").NavigationScreenProp<
     import("react-navigation").NavigationState,
     import("react-navigation").NavigationParams
   >;
 };
 
-function SignIn({ navigation: { navigate, goBack, getParam, state } }: Props) {
-  const { initializeApp } = useContext(AppContext);
+function SignIn(props: Props) {
+  const { initializeApp, currentAuthenticatedUser } = useContext(AppContext);
   const {
     handleLogin,
     loading,
@@ -33,15 +39,23 @@ function SignIn({ navigation: { navigate, goBack, getParam, state } }: Props) {
     normalizePhoneStringInput
   } = useAuth(Auth);
 
-  const isSecondaryScreen: string = getParam("isSecondaryScreen", null);
+  const isSecondaryScreen: string =
+    Platform.OS !== "web"
+      ? props.navigation.getParam("isSecondaryScreen", null)
+      : null;
 
   useEffect(() => {
     initialize();
   }, []);
 
   async function initialize(): Promise<void> {
+    if (Platform.OS === "web" && currentAuthenticatedUser) {
+      props.history.push("/settings");
+    }
+
     const { retrieveData } = await import("@potluckmarket/ella");
     const username = await retrieveData("username");
+
     if (username) {
       handleStateChange("username", username);
     }
@@ -51,7 +65,7 @@ function SignIn({ navigation: { navigate, goBack, getParam, state } }: Props) {
     <View style={styles.container}>
       {isSecondaryScreen && (
         <ButtonHeader
-          onBackBtnPress={() => goBack(null)}
+          onBackBtnPress={() => props.navigation.goBack(null)}
           containerStyle={{ alignSelf: "flex-start" }}
         />
       )}
@@ -62,7 +76,13 @@ function SignIn({ navigation: { navigate, goBack, getParam, state } }: Props) {
         onChangeText={text => handleStateChange("username", text)}
         style={styles.input}
         value={username}
-        keyboardType="numeric"
+        keyboardType={
+          Platform.OS === "web" && isBrowser
+            ? "numeric"
+            : Platform.OS !== "web"
+            ? "numeric"
+            : null
+        }
         returnKeyType="done"
         status={error ? "danger" : null}
         icon={({ tintColor }) => {
@@ -85,6 +105,7 @@ function SignIn({ navigation: { navigate, goBack, getParam, state } }: Props) {
         style={styles.input}
         value={password}
         status={error ? "danger" : null}
+        returnKeyType="done"
         icon={({ tintColor }) => (
           <TouchableOpacity
             onPress={() => handleStateChange("hidePassword", !hidePassword)}
@@ -107,7 +128,7 @@ function SignIn({ navigation: { navigate, goBack, getParam, state } }: Props) {
         />
       ) : (
         <Button
-          onPress={async () =>
+          onPress={async () => {
             await handleLogin(
               {
                 username: americanizePhoneNumber(
@@ -116,10 +137,25 @@ function SignIn({ navigation: { navigate, goBack, getParam, state } }: Props) {
                 password: password
               },
               async res => {
+                if (
+                  res.challengeName &&
+                  res.challengeName === "NEW_PASSWORD_REQUIRED"
+                ) {
+                  await Auth.completeNewPassword(res, password);
+                }
+
+                const { storeData } = await import("@potluckmarket/ella");
+
+                await storeData("username", username);
+
                 await initializeApp(res);
 
                 if (isSecondaryScreen) {
-                  navigate("PotluckSuite");
+                  props.navigation.navigate("PotluckSuite");
+                }
+
+                if (Platform.OS === "web") {
+                  props.history.push("/settings");
                 }
               },
               error => {
@@ -129,8 +165,8 @@ function SignIn({ navigation: { navigate, goBack, getParam, state } }: Props) {
                   handleStateChange("error", error.message);
                 }
               }
-            )
-          }
+            );
+          }}
           style={styles.btn}
           activeOpacity={0.5}
         >
@@ -140,11 +176,27 @@ function SignIn({ navigation: { navigate, goBack, getParam, state } }: Props) {
 
       <Text style={styles.errorText}>{error}</Text>
 
-      <TouchableOpacity onPress={() => navigate("Signup")}>
+      <TouchableOpacity
+        onPress={() => {
+          if (Platform.OS === "web") {
+            props.history.push("/signup");
+          } else {
+            props.navigation.navigate("Signup");
+          }
+        }}
+      >
         <Text>Sign Up</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigate("ForgotPassword")}>
+      <TouchableOpacity
+        onPress={() => {
+          if (Platform.OS === "web") {
+            props.history.push("/forgotpassword");
+          } else {
+            props.navigation.navigate("ForgotPassword");
+          }
+        }}
+      >
         <Text>Forgot Password</Text>
       </TouchableOpacity>
     </View>

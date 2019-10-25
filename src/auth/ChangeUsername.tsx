@@ -1,5 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Platform } from "react-native";
+import Confirm from "./Confirm";
 
 import styles from "./defaultStyles";
 import { Input, Button, Text } from "react-native-ui-kitten";
@@ -7,17 +8,11 @@ import { Icon } from "react-native-elements";
 
 import { useAuth } from "@potluckmarket/ella";
 import { Auth } from "aws-amplify";
-import { Colors } from "common";
+import { Colors, RNWebComponent } from "common";
 import { ButtonHeader } from "common/components";
+import { isBrowser } from "react-device-detect";
 
-type Props = {
-  navigation: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >;
-};
-
-function ChangeUsername({ navigation: { navigate, goBack } }: Props) {
+function ChangeUsername(props: RNWebComponent) {
   const {
     handleChangeAttribute,
     loading,
@@ -27,6 +22,8 @@ function ChangeUsername({ navigation: { navigate, goBack } }: Props) {
     normalizePhoneStringInput,
     americanizePhoneNumber
   } = useAuth(Auth);
+
+  const [confirm, setConfirm] = useState(false);
 
   useEffect(() => {
     initialize();
@@ -40,9 +37,13 @@ function ChangeUsername({ navigation: { navigate, goBack } }: Props) {
     );
 
     if (changeUsernameRequested) {
-      navigate("Confirm", {
-        verifyAttribute: true
-      });
+      if (Platform.OS === "web") {
+        setConfirm(true);
+      } else {
+        props.navigation.navigate("Confirm", {
+          verifyAttribute: true
+        });
+      }
     }
   }
 
@@ -64,9 +65,14 @@ function ChangeUsername({ navigation: { navigate, goBack } }: Props) {
           "changeUsernameRequested",
           `${americanizePhoneNumber(normalizePhoneStringInput(username))}`
         );
-        navigate("Confirm", {
-          verifyAttribute: true
-        });
+
+        if (Platform.OS === "web") {
+          setConfirm(true);
+        } else {
+          props.navigation.navigate("Confirm", {
+            verifyAttribute: true
+          });
+        }
       },
       error =>
         handleStateChange(
@@ -76,20 +82,42 @@ function ChangeUsername({ navigation: { navigate, goBack } }: Props) {
     );
   }
 
+  if (confirm) {
+    return (
+      <Confirm
+        navigation={props.navigation}
+        {...{
+          history: props.history,
+          location: props.location,
+          match: props.match
+        }}
+        setConfirm={setConfirm}
+        verifyAttribute
+      />
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <ButtonHeader
-        onBackBtnPress={() => goBack(null)}
-        containerStyle={{ alignSelf: "flex-start" }}
-      />
-
+      {Platform.OS !== "web" && (
+        <ButtonHeader
+          onBackBtnPress={() => props.navigation.goBack(null)}
+          containerStyle={{ alignSelf: "flex-start" }}
+        />
+      )}
       <Input
         size="large"
         label="New Phone Number"
         onChangeText={text => handleStateChange("username", text)}
         style={styles.input}
         value={username}
-        keyboardType="numeric"
+        keyboardType={
+          Platform.OS === "web" && isBrowser
+            ? "numeric"
+            : Platform.OS !== "web"
+            ? "numeric"
+            : null
+        }
         returnKeyType="done"
         icon={({ tintColor }) => {
           return (
