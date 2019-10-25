@@ -1,27 +1,17 @@
-import React, { memo, Fragment, useState, useEffect } from "react";
-import { StyleSheet, Image, View, Platform, ScrollView } from "react-native";
+import React, { memo, useState, useEffect, lazy, Suspense } from "react";
+import { StyleSheet, View, Platform, ActivityIndicator } from "react-native";
 import { Text } from "react-native-ui-kitten";
-import {
-  Dimensions,
-  Colors,
-  isIphoneXorAbove,
-  isTablet,
-  useTimer
-} from "common";
-import { ButtonHeader, Display } from "common/components";
-import { Graph } from "./components";
-import ImageView from "react-native-image-view";
-import { Image as CacheImage } from "react-native-expo-image-cache";
+import { Colors, isTablet, useTimer, RNWebComponent } from "common";
+import { Graph, Lightbox } from "./components";
 import { ProductType } from "@potluckmarket/louis";
 import { scale, moderateScale } from "react-native-size-matters";
 import { Analytics } from "aws-amplify";
+import { isBrowser } from "react-device-detect";
 
-type ProductProps = {
-  navigation: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >;
-};
+interface ProductProps extends RNWebComponent {
+  product?: import("@potluckmarket/louis").InventoryItem;
+  store?: import("@potluckmarket/louis").Store;
+}
 
 const chartConfig = {
   backgroundGradientFrom: "#fff",
@@ -30,23 +20,26 @@ const chartConfig = {
   strokeWidth: 2
 };
 
-export default memo(function Product({
-  navigation: { getParam, goBack }
-}: ProductProps) {
-  const product: import("@potluckmarket/louis").InventoryItem = getParam(
-    "product",
-    null
-  );
-  const store: import("@potluckmarket/louis").Store = getParam("store", null);
-  const [isImageModalVisible, setIsImageModalVisible] = useState(false);
+const Layout = lazy(() =>
+  Platform.OS === "web"
+    ? isBrowser
+      ? import("./components/ProductWebView")
+      : import("./components/ProductMobileView")
+    : import("./components/ProductMobileView")
+);
 
-  const images = [
-    {
-      source: {
-        uri: product && product.image ? product.image : null
-      }
-    }
-  ];
+export default memo(function Product(props: ProductProps) {
+  const product: import("@potluckmarket/louis").InventoryItem =
+    Platform.OS === "web"
+      ? props.location.state[0].product || props.product
+      : props.navigation.getParam("product", null);
+
+  const store: import("@potluckmarket/louis").Store =
+    Platform.OS === "web"
+      ? props.location.state[0].store || props.store
+      : props.navigation.getParam("store", {});
+
+  const [isImageModalVisible, setIsImageModalVisible] = useState(false);
 
   const { start, end } = useTimer();
 
@@ -86,6 +79,30 @@ export default memo(function Product({
     });
   }
 
+  function renderLightbox() {
+    let images = [];
+
+    if (Platform.OS === "web") {
+      images = [product.image];
+    } else {
+      images = [
+        {
+          source: {
+            uri: product.image
+          }
+        }
+      ];
+    }
+
+    return (
+      <Lightbox
+        images={images}
+        isImageModalVisible={isImageModalVisible}
+        close={() => setIsImageModalVisible(false)}
+      />
+    );
+  }
+
   function buildGraphDataObject(
     productType?: ProductType
   ): { data: number[]; colors: string[] } {
@@ -117,7 +134,8 @@ export default memo(function Product({
 
     if (
       product.productType === ProductType.Topical ||
-      product.productType === ProductType.Edible
+      product.productType === ProductType.Edible ||
+      product.productType === ProductType.Concentrate
     ) {
       return (
         <View
@@ -163,12 +181,13 @@ export default memo(function Product({
     const data = buildGraphDataObject(product.productType);
 
     return (
-      <Fragment>
+      <View style={styles.graphContainer}>
         <Graph
           data={data}
           width={300}
           height={moderateScale(220)}
           chartConfig={chartConfig}
+          style={{ backgroundColor: "transparent" }}
         />
 
         <View style={styles.legendContainer}>
@@ -196,89 +215,37 @@ export default memo(function Product({
             </View>
           )}
         </View>
-      </Fragment>
+      </View>
     );
   }
 
-  function renderImageHeader() {
-    const image =
-      product && product.image
-        ? product.image
-        : store && store.logo
-        ? store.logo
-        : null;
-
-    if (image) {
-      const uri = image;
-      const preview = { uri: image };
-
-      return (
-        <CacheImage
-          resizeMode="contain"
-          style={styles.image}
-          {...{ preview, uri }}
-        />
-      );
+  function goBack() {
+    if (Platform.OS === "web") {
+      props.history.goBack();
     } else {
-      return (
-        <Image
-          resizeMode="contain"
-          style={styles.image}
-          source={require("assets/images/potluck_default.png")}
-        />
-      );
+      props.navigation.goBack();
     }
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Display
-        imageSmall
-        imageSource={
-          product && product.image
-            ? product.image
-            : store && store.logo
-            ? store.logo
-            : null
-        }
+    <Suspense
+      fallback={
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="small" color={Colors.green} />
+        </View>
+      }
+    >
+      <Layout
+        store={store}
+        product={product}
+        renderLightbox={renderLightbox}
+        renderCannabinoidProfile={renderCannabinoidProfile}
+        styles={styles}
+        goBack={goBack}
         onImagePress={() => setIsImageModalVisible(true)}
-        imagePressDisabled={!product || !product.image}
-        renderHeader={() => <ButtonHeader onBackBtnPress={() => goBack()} />}
-        cards={[
-          {
-            cardStyle: styles.page,
-            renderContent: () => (
-              <Fragment>
-                <Text category="h6" style={styles.productName}>
-                  {product.product.name}
-                </Text>
-                <Text category="c1" style={styles.productStrainType}>
-                  {product.strainType}
-                </Text>
-                {product.description && (
-                  <Text style={styles.description}>{product.description}</Text>
-                )}
-              </Fragment>
-            )
-          },
-          {
-            cardStyle: styles.page,
-            renderContent: () => (
-              <Fragment>{renderCannabinoidProfile()}</Fragment>
-            )
-          }
-        ]}
+        {...props}
       />
-
-      {product && product.image && (
-        <ImageView
-          images={images}
-          imageIndex={0}
-          isVisible={isImageModalVisible}
-          onClose={() => setIsImageModalVisible(false)}
-        />
-      )}
-    </ScrollView>
+    </Suspense>
   );
 });
 
@@ -286,43 +253,8 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.gray
   },
-  image: {
-    width: Dimensions.width,
-    height: Dimensions.width
-  },
-  panelContainer: {
-    top: Dimensions.height - 30,
-    bottom: 200
-  },
-  panel: {
-    borderTopRightRadius: 15,
-    borderTopLeftRadius: 15,
-    padding: 25,
-    width: Dimensions.width,
-    justifyContent: "flex-start",
-    alignItems: "center",
-    flexDirection: "column",
-    shadowOffset: { width: 1, height: 0 },
-    shadowColor: "black",
-    shadowOpacity: 0.2,
-    backgroundColor: "#F4F8FB"
-  },
-  wrapper: {},
-  panelPrimaryContentWrapper: {
-    marginBottom: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 999
-  },
-  panelIconContainer: {
-    marginBottom: 10,
-    width: Dimensions.width
-  },
   productName: {
-    fontSize: Platform.select({
-      ios: scale(20),
-      android: scale(20)
-    }),
+    fontSize: scale(20),
     padding: Platform.select({
       ios: isTablet() ? scale(12) : 0
     }),
@@ -332,7 +264,8 @@ const styles = StyleSheet.create({
   productStrainType: {
     fontSize: Platform.select({
       ios: scale(18),
-      android: scale(14)
+      android: scale(14),
+      web: scale(20)
     }),
     padding: isTablet() ? scale(10) : 4
   },
@@ -342,7 +275,8 @@ const styles = StyleSheet.create({
   page: {
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 10
+    paddingHorizontal: 10,
+    overflow: "hidden"
   },
   title: {
     fontSize: scale(18),
@@ -356,17 +290,35 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingTop: 10
   },
+  graphContainer: {
+    flexDirection: Platform.select({
+      web: "column"
+    }),
+    alignItems: "center"
+  },
   dataText: {
-    fontSize: scale(16),
-    padding: isTablet() ? scale(8) : 0
+    fontSize: Platform.select({
+      ios: scale(16),
+      android: scale(16),
+      web: isBrowser ? 18 : scale(16)
+    }),
+    padding: Platform.select({
+      ios: isTablet() ? scale(8) : 0,
+      android: isTablet() ? scale(8) : 0,
+      web: 0
+    })
   },
   legendContainer: {
     alignItems: "flex-start",
-    justifyContent: "space-evenly"
+    justifyContent: Platform.select({
+      ios: "space-evenly",
+      android: "space-evenly",
+      web: isBrowser ? "center" : "space-evenly"
+    })
   },
   dataPoint: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: 5
   },
   colorIndicator: {
@@ -375,5 +327,10 @@ const styles = StyleSheet.create({
     height: scale(16),
     width: scale(16),
     marginRight: 10
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
   }
 });

@@ -1,26 +1,33 @@
-import React, { useEffect, useContext } from "react";
-import { View, TouchableOpacity, ActivityIndicator } from "react-native";
+import React, { useEffect, useContext, Dispatch } from "react";
+import {
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  Platform
+} from "react-native";
 import styles from "./defaultStyles";
 import { Input, Button, Text } from "react-native-ui-kitten";
 import { Icon } from "react-native-elements";
 import { useAuth } from "@potluckmarket/ella";
 import { Auth } from "aws-amplify";
-import client from "client";
 import { UpdateUser } from "mutations";
 import AppContext from "appcontext";
-import { Colors } from "common";
+import { Colors, RNWebComponent } from "common";
 import { ButtonHeader } from "common/components";
+import { isBrowser } from "react-device-detect";
 
-type Props = {
-  navigation: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >;
-};
+interface ConfirmProps extends RNWebComponent {
+  verifyAttribute?: boolean;
+  setConfirm?: Dispatch<boolean>;
+}
 
-function Confirm({ navigation: { navigate, goBack, getParam } }: Props) {
-  const { currentAuthenticatedUser } = useContext(AppContext);
-  const verifyAttribute = getParam("verifyAttribute", false);
+function Confirm(props: ConfirmProps) {
+  const { currentAuthenticatedUser, client } = useContext(AppContext);
+
+  const verifyAttribute =
+    Platform.OS === "web"
+      ? props.verifyAttribute
+      : props.navigation.getParam("verifyAttribute", false);
 
   const {
     loading,
@@ -74,7 +81,11 @@ function Confirm({ navigation: { navigate, goBack, getParam } }: Props) {
         async () => {
           const { destroyData } = await import("@potluckmarket/ella");
           await destroyData("forgotPassword");
-          navigate("Signin");
+          if (Platform.OS === "web") {
+            props.history.push("/signin");
+          } else {
+            props.navigation.navigate("Signin");
+          }
         },
         error =>
           handleStateChange(
@@ -125,7 +136,11 @@ function Confirm({ navigation: { navigate, goBack, getParam } }: Props) {
             });
           }
 
-          navigate("Signin");
+          if (Platform.OS === "web") {
+            props.history.push("/signin");
+          } else {
+            props.navigation.navigate("Signin");
+          }
         },
         error => {
           handleStateChange(
@@ -144,7 +159,11 @@ function Confirm({ navigation: { navigate, goBack, getParam } }: Props) {
         async () => {
           const { destroyData } = await import("@potluckmarket/ella");
           await destroyData("signedUp");
-          navigate("Signin");
+          if (Platform.OS === "web") {
+            props.history.push("/signin");
+          } else {
+            props.navigation.navigate("Signin");
+          }
         },
         error =>
           handleStateChange(
@@ -155,18 +174,55 @@ function Confirm({ navigation: { navigate, goBack, getParam } }: Props) {
     }
   }
 
-  async function cancelForgotPassword(): Promise<void> {
-    const { destroyData } = await import("@potluckmarket/ella");
-    await destroyData("requestSent");
-    goBack();
+  async function cancel() {
+    if (forgotPassword && !verifyAttribute) {
+      const { destroyData } = await import("@potluckmarket/ella");
+      await destroyData("requestSent");
+    } else if (verifyAttribute && !forgotPassword) {
+      const { destroyData } = await import("@potluckmarket/ella");
+      await destroyData("changeUsernameRequested");
+    } else {
+      const { destroyData } = await import("@potluckmarket/ella");
+      await destroyData("signedUp");
+    }
+
+    if (Platform.OS === "web") {
+      props.setConfirm(false);
+    } else {
+      props.navigation.goBack();
+    }
+  }
+
+  function renderCancelText() {
+    if (forgotPassword && !verifyAttribute) {
+      return (
+        <TouchableOpacity onPress={() => cancel()}>
+          <Text>Cancel Forgot Password Request</Text>
+        </TouchableOpacity>
+      );
+    } else if (verifyAttribute && !forgotPassword) {
+      return (
+        <TouchableOpacity onPress={() => cancel()}>
+          <Text>Cancel Phone Number Change Request</Text>
+        </TouchableOpacity>
+      );
+    } else {
+      return (
+        <TouchableOpacity onPress={() => cancel()}>
+          <Text>Sign Up With A Different Number</Text>
+        </TouchableOpacity>
+      );
+    }
   }
 
   return (
     <View style={styles.container}>
-      <ButtonHeader
-        onBackBtnPress={() => goBack(null)}
-        containerStyle={{ alignSelf: "flex-start" }}
-      />
+      {Platform.OS !== "web" && (
+        <ButtonHeader
+          onBackBtnPress={() => props.navigation.goBack(null)}
+          containerStyle={{ alignSelf: "flex-start" }}
+        />
+      )}
 
       {!verifyAttribute ? (
         <Input
@@ -175,7 +231,13 @@ function Confirm({ navigation: { navigate, goBack, getParam } }: Props) {
           onChangeText={text => handleStateChange("username", text)}
           style={styles.input}
           value={username}
-          keyboardType="numeric"
+          keyboardType={
+            Platform.OS === "web" && isBrowser
+              ? "numeric"
+              : Platform.OS !== "web"
+              ? "numeric"
+              : null
+          }
           icon={({ tintColor }) => {
             return (
               <Icon
@@ -244,11 +306,9 @@ function Confirm({ navigation: { navigate, goBack, getParam } }: Props) {
 
       <Text style={styles.errorText}>{error}</Text>
 
-      {forgotPassword && !verifyAttribute ? (
-        <TouchableOpacity onPress={() => cancelForgotPassword()}>
-          <Text>Cancel Forgot Password Request</Text>
-        </TouchableOpacity>
-      ) : (
+      {Platform.OS === "web" && renderCancelText()}
+
+      {verifyAttribute && !forgotPassword && (
         <TouchableOpacity
           onPress={() =>
             handleResendConfirmationEmail(
@@ -270,7 +330,15 @@ function Confirm({ navigation: { navigate, goBack, getParam } }: Props) {
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity onPress={() => navigate("SignIn")}>
+      <TouchableOpacity
+        onPress={() => {
+          if (Platform.OS === "web") {
+            props.history.push("/signin");
+          } else {
+            props.navigation.navigate("SignIn");
+          }
+        }}
+      >
         <Text>Sign In</Text>
       </TouchableOpacity>
     </View>

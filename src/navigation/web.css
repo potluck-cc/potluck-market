@@ -1,0 +1,17 @@
+@font-face {
+  font-family: CircularSTD-Book;
+  src: url(../../assets/fonts/CircularStd-Book.otf);
+}
+
+input:focus {
+  outline-color: #f7f9fc;
+}
+
+.ant-menu-item {
+  font-family: CircularSTD-Book;
+}
+
+.ant-menu-item-selected {
+  background-color: #46b060 !important;
+  opacity: 1;
+}

@@ -15,6 +15,7 @@ export default gql`
     $state: State
     $street: String
     $city: String
+    $marketToken: String
   ) {
     createUser(
       input: {
@@ -31,6 +32,7 @@ export default gql`
         state: $state
         street: $street
         city: $city
+        marketToken: $marketToken
       }
     ) {
       id
