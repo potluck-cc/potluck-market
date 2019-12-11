@@ -16,6 +16,9 @@ export default gql`
     $city: String
     $state: State
     $marketToken: String
+    $stateId: String
+    $medCard: String
+    $marketWebToken: String
   ) {
     updateUser(
       input: {
@@ -33,9 +36,25 @@ export default gql`
         city: $city
         state: $state
         marketToken: $marketToken
+        stateId: $stateId
+        medCard: $medCard
+        marketWebToken: $marketWebToken
       }
     ) {
       id
+      confirmed
+      firstname
+      lastname
+      city
+      street
+      patientID
+      expiration
+      email
+      phone
+      marketToken
+      marketWebToken
+      stateId
+      medCard
     }
   }
 `;

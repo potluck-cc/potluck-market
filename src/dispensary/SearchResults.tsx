@@ -6,7 +6,7 @@ import { Topbar } from "common/components";
 import { scale } from "react-native-size-matters";
 import { partialApplication } from "@potluckmarket/ella";
 import { Modal } from "semantic-ui-react";
-import Product from "./Product";
+import { Product } from "product";
 
 const SearchResults = (props: RNWebComponent) => {
   const searchQuery =

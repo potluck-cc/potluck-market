@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import {
   TouchableOpacity,
   StyleSheet,
@@ -18,7 +18,6 @@ import { Transition } from "react-navigation-fluid-transitions";
 import { Image as CacheImage } from "react-native-expo-image-cache";
 import { scale } from "react-native-size-matters";
 import { isBrowser } from "react-device-detect";
-import { isLandscape } from "../dimensions";
 
 export enum CardSize {
   small = "small",
@@ -43,7 +42,7 @@ type CardProps = {
   resizeMode?: ImageResizeMode;
 };
 
-export default function Card({
+export default memo(function Card({
   onPress,
   imageSource,
   title,
@@ -60,7 +59,7 @@ export default function Card({
   localImage,
   resizeMode
 }: CardProps) {
-  const { widthToDP, heightToDP, dimensions } = useDimensions();
+  const { widthToDP, heightToDP, isLandscape } = useDimensions();
 
   const smallCardStyles = {
     container: {
@@ -176,9 +175,9 @@ export default function Card({
       fontSize: Platform.select({
         ios: scale(16),
         android: scale(16),
-        web: scale(16)
+        web: isLandscape ? heightToDP("5%") : heightToDP("3%")
       }),
-      padding: isTablet() ? (isLandscape(dimensions) ? 0 : scale(5)) : 0,
+      padding: isTablet() ? (isLandscape ? 0 : scale(5)) : 0,
       width: "100%",
       textAlign: "center",
       lineHeight: scale(20),
@@ -187,9 +186,9 @@ export default function Card({
     description: {
       textAlign: "center",
       width: "100%",
-      fontSize: scale(14),
+      fontSize: isLandscape ? heightToDP("4%") : heightToDP("2%"),
       padding: isTablet() ? scale(6) : 2,
-      lineHeight: scale(13),
+      // lineHeight: scale(13),
       ...descriptionStyle
     }
   });
@@ -264,4 +263,4 @@ export default function Card({
       </View>
     </TouchableOpacity>
   );
-}
+});

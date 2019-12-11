@@ -6,6 +6,9 @@ export default gql`
       id
       name
       marketToken
+      marketWebToken
+      stateId
+      medCard
     }
   }
 `;

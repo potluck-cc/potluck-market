@@ -2,43 +2,22 @@ import React, { useState } from "react";
 import { StyleSheet, View, Platform, TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
 import { Input } from "react-native-ui-kitten";
-import { Colors, isIphoneXorAbove } from "common";
+import { Colors, isIphoneXorAbove, isTablet } from "common";
 import { isBrowser } from "react-device-detect";
 
 type SearchHeaderProps = {
-  products: import("@potluckmarket/louis").InventoryItem[];
-  store: import("@potluckmarket/louis").Store;
-  navigate: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >["navigate"];
   secondaryComponent?: JSX.Element;
+  onSearch: (query: string) => void;
 };
 
 function SearchHeader({
   secondaryComponent,
-  products,
-  store,
-  navigate
+  onSearch = () => {}
 }: SearchHeaderProps) {
   const [query, setQuery] = useState("");
 
   function onSubmitSearch() {
-    if (query.length) {
-      if (Platform.OS === "web") {
-        navigate(isBrowser ? `/menu/search/${query}` : `/search/${query}`, {
-          store,
-          products,
-          searchQuery: query
-        });
-      } else {
-        navigate("SearchResults", {
-          searchQuery: query,
-          products,
-          store
-        });
-      }
-    }
+      onSearch(query);
   }
 
   return (
@@ -105,7 +84,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "white",
     width: Platform.select({
-      web: isBrowser ? "35%" : "85%",
+      web: isBrowser && !isTablet() ? "35%" : "85%",
       ios: "85%",
       android: "85%"
     })

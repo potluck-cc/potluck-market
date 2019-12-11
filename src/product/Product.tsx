@@ -1,16 +1,24 @@
 import React, { memo, useState, useEffect, lazy, Suspense } from "react";
 import { StyleSheet, View, Platform, ActivityIndicator } from "react-native";
 import { Text } from "react-native-ui-kitten";
-import { Colors, isTablet, useTimer, RNWebComponent } from "common";
-import { Graph, Lightbox } from "./components";
+import {
+  Colors,
+  isTablet,
+  useTimer,
+  RNWebComponent,
+  useDimensions
+} from "common";
+import { Lightbox } from "common/components";
+import Graph from "./Graph";
 import { ProductType } from "@potluckmarket/louis";
 import { scale, moderateScale } from "react-native-size-matters";
 import { Analytics } from "aws-amplify";
 import { isBrowser } from "react-device-detect";
+import ProductMobileView from "./ProductMobileView";
 
 interface ProductProps extends RNWebComponent {
-  product?: import("@potluckmarket/louis").InventoryItem;
-  store?: import("@potluckmarket/louis").Store;
+  product: import("@potluckmarket/types").InventoryItem;
+  store: import("@potluckmarket/types").Store;
 }
 
 const chartConfig = {
@@ -20,28 +28,23 @@ const chartConfig = {
   strokeWidth: 2
 };
 
-const Layout = lazy(() =>
-  Platform.OS === "web"
-    ? isBrowser
-      ? import("./components/ProductWebView")
-      : import("./components/ProductMobileView")
-    : import("./components/ProductMobileView")
-);
-
 export default memo(function Product(props: ProductProps) {
-  const product: import("@potluckmarket/louis").InventoryItem =
+  const product: import("@potluckmarket/types").InventoryItem =
     Platform.OS === "web"
-      ? props.location.state[0].product || props.product
+      ? (props.location.state && props.location.state[0].product) ||
+        props.product
       : props.navigation.getParam("product", null);
 
-  const store: import("@potluckmarket/louis").Store =
+  const store: import("@potluckmarket/types").Store =
     Platform.OS === "web"
-      ? props.location.state[0].store || props.store
+      ? (props.location.state && props.location.state[0].store) || props.store
       : props.navigation.getParam("store", {});
 
   const [isImageModalVisible, setIsImageModalVisible] = useState(false);
 
   const { start, end } = useTimer();
+
+  const { heightToDP } = useDimensions();
 
   useEffect(() => {
     start();
@@ -68,35 +71,20 @@ export default memo(function Product(props: ProductProps) {
   }
 
   async function recordPageVisit(visitTime: number) {
-    const attributes = await buildAnalyticsAttributes();
-
-    Analytics.record({
-      name: "productVisit",
-      attributes,
-      metrics: {
-        secondsBrowsed: visitTime
-      }
-    });
+    // const attributes = await buildAnalyticsAttributes();
+    // Analytics.record({
+    //   name: "productVisit",
+    //   attributes,
+    //   metrics: {
+    //     secondsBrowsed: visitTime
+    //   }
+    // });
   }
 
   function renderLightbox() {
-    let images = [];
-
-    if (Platform.OS === "web") {
-      images = [product.image];
-    } else {
-      images = [
-        {
-          source: {
-            uri: product.image
-          }
-        }
-      ];
-    }
-
     return (
       <Lightbox
-        images={images}
+        images={[product.image]}
         isImageModalVisible={isImageModalVisible}
         close={() => setIsImageModalVisible(false)}
       />
@@ -181,7 +169,17 @@ export default memo(function Product(props: ProductProps) {
     const data = buildGraphDataObject(product.productType);
 
     return (
-      <View style={styles.graphContainer}>
+      <View
+        style={[
+          styles.graphContainer,
+          {
+            marginBottom: Platform.select({
+              ios: heightToDP("20%"),
+              android: heightToDP("20%")
+            })
+          }
+        ]}
+      >
         <Graph
           data={data}
           width={300}
@@ -221,7 +219,7 @@ export default memo(function Product(props: ProductProps) {
 
   function goBack() {
     if (Platform.OS === "web") {
-      props.history.goBack();
+      props.goBack();
     } else {
       props.navigation.goBack();
     }
@@ -235,7 +233,7 @@ export default memo(function Product(props: ProductProps) {
         </View>
       }
     >
-      <Layout
+      <ProductMobileView
         store={store}
         product={product}
         renderLightbox={renderLightbox}
@@ -256,7 +254,12 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: scale(20),
     padding: Platform.select({
-      ios: isTablet() ? scale(12) : 0
+      ios: isTablet() ? scale(12) : 0,
+      web: scale(4)
+    }),
+    marginTop: Platform.select({
+      default: null,
+      web: (isBrowser && 20) || null
     }),
     marginBottom: 10,
     textAlign: "center"
@@ -267,7 +270,7 @@ const styles = StyleSheet.create({
       android: scale(14),
       web: scale(20)
     }),
-    padding: isTablet() ? scale(10) : 4
+    padding: isTablet() ? scale(10) : scale(4)
   },
   pagesContainer: {
     backgroundColor: "white"

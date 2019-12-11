@@ -6,3 +6,8 @@ export { default as Divider } from "./Divider";
 export { default as AvoidKeyboard } from "./AvoidKeyboard";
 export { default as Card, CardSize } from "./Card";
 export { default as Display } from "./Display";
+export { default as SlidingMenu } from "./SlidingMenu";
+export { default as GenericButton } from "./GenericButton";
+export { default as Lightbox } from "./Lightbox";
+export { default as MessageModal } from "./MessageModal";
+export { default as Modal } from "./Modal";

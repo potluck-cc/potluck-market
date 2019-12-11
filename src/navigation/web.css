@@ -15,3 +15,7 @@ input:focus {
   background-color: #46b060 !important;
   opacity: 1;
 }
+
+.ReactModalPortal {
+  z-index: 9999;
+}

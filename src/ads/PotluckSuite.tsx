@@ -5,6 +5,7 @@ import { Card, TextHeader } from "common/components";
 import { Colors, isIphoneXorAbove, isTablet, useDimensions } from "common";
 import AppContext from "appcontext";
 import { scale } from "react-native-size-matters";
+import { Linking } from "expo";
 
 type PotluckSuiteProps = {
   navigation: import("react-navigation").NavigationScreenProp<
@@ -34,6 +35,17 @@ export default function PotluckSuite({
         resizeMode="cover"
         containerStyle={{ height: heightToDP("60%") }}
         descriptionStyle={{ lineHeight: isTablet() ? 30 : 20 }}
+        onPress={() => {
+          if (Platform.OS === "ios") {
+            Linking.openURL(
+              "https://apps.apple.com/us/app/potluck-med/id1477140493?ls=1"
+            );
+          } else if (Platform.OS === "android") {
+            Linking.openURL(
+              "https://play.google.com/store/apps/details?id=com.potluckmarket.PotluckMED"
+            );
+          }
+        }}
       />
 
       <View style={{ margin: 15 }}>

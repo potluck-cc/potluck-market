@@ -59,8 +59,8 @@ export function useDimensions() {
 
   function handleDimensionsChange(dims) {
     updateDimensions(dims.window);
-    setIsOrientationLandscape(dims.window);
-    setIsOrientationPortrait(dims.window);
+    setIsOrientationLandscape(isLandscape(dims.window));
+    setIsOrientationPortrait(isPortrait(dims.window));
   }
 
   const widthToDP = partialApplication(percentageToDP, dimensions.width);

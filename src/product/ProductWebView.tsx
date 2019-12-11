@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Image, StyleSheet, Platform } from "react-native";
+import { View, Image, StyleSheet, Platform, ScrollView } from "react-native";
 import { Text } from "react-native-ui-kitten";
 import { scale } from "react-native-size-matters";
 import { isBrowser } from "react-device-detect";
@@ -82,7 +82,7 @@ export default function ProductWebView({
   });
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Image
         source={
           product.image
@@ -105,6 +105,6 @@ export default function ProductWebView({
 
         <View style={styles.graph}>{renderCannabinoidProfile()}</View>
       </View>
-    </View>
+    </ScrollView>
   );
 }

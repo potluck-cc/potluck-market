@@ -36,6 +36,11 @@
       "package": "com.potluckmarket.Potluck",
       "versionCode": 5,
       "icon": "./assets/images/potluck_logo_txt_large.png",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA"
+      ],
       "splash": {
         "backgroundColor": "#46B060",
         "resizeMode": "contain",

@@ -62,6 +62,30 @@ function Settings(props: RNWebComponent) {
         <ListItem
           onPress={() => {
             if (Platform.OS === "web") {
+              props.history.push("/verification");
+            } else {
+              props.navigation.navigate("Verification");
+            }
+          }}
+          titleStyle={styles.title}
+          title="Upload Identification"
+          icon={() => (
+            <Icon name="checkbox-marked-circle-outline" type="material-community" size={30} />
+          )}
+          accessory={() => (
+            <Icon
+              name="chevron-double-right"
+              type="material-community"
+              size={15}
+            />
+          )}
+        />
+
+        <Divider />
+
+        <ListItem
+          onPress={() => {
+            if (Platform.OS === "web") {
               props.history.push("/changenumber");
             } else {
               props.navigation.navigate("ChangeUsername");

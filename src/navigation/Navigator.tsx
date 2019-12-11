@@ -10,7 +10,7 @@ import {
 import { Icon } from "react-native-elements";
 import { Colors } from "common";
 
-import { DispensaryTransition, Menu, Product, SearchResults } from "dispensary";
+import { DispensaryTransition, Menu, SearchResults } from "dispensary";
 import {
   Signin,
   Signup,
@@ -20,7 +20,11 @@ import {
   ChangeUsername
 } from "auth";
 
-import { Settings } from "profile";
+import { Product } from "product";
+
+import { PreviousOrders } from "orders";
+
+import { Settings, Verification } from "profile";
 
 import { PotluckSuite } from "ads";
 
@@ -48,9 +52,35 @@ const HomeStack = createStackNavigator(
   }
 );
 
+const OrderStack = createStackNavigator(
+  {
+    PreviousOrders,
+    Signin,
+    Signup,
+    Confirm,
+    ForgotPassword
+  },
+  {
+    defaultNavigationOptions: {
+      header: null
+    },
+    navigationOptions: {
+      tabBarIcon: ({ focused }) => (
+        <Icon
+          name="text-document"
+          type="entypo"
+          color={focused ? Colors.green : "white"}
+          size={25}
+        />
+      )
+    }
+  }
+);
+
 const ProfileStack = createStackNavigator(
   {
     Settings,
+    Verification,
     Signin,
     ChangeUsername,
     ChangeAttributes,
@@ -103,6 +133,7 @@ const AdsStack = createStackNavigator(
 const App = createBottomTabNavigator(
   {
     HomeStack,
+    OrderStack,
     ProfileStack,
     AdsStack
   },

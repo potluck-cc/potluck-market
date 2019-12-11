@@ -14,7 +14,7 @@ import { Menu } from "dispensary";
 import { scale } from "react-native-size-matters";
 import { isBrowser } from "react-device-detect";
 import { Modal } from "semantic-ui-react";
-import Product from "../Product";
+import { Product } from "product";
 
 const { TabPane } = Tabs;
 
@@ -91,10 +91,10 @@ export default function SingleDispensaryWebView({
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState<
-    import("@potluckmarket/louis").InventoryItem | null
+    import("@potluckmarket/types").InventoryItem | null
   >(null);
 
-  function openModal(item: import("@potluckmarket/louis").InventoryItem) {
+  function openModal(item: import("@potluckmarket/types").InventoryItem) {
     setActiveMenuItem(item);
     setModalOpen(true);
   }
@@ -116,6 +116,7 @@ export default function SingleDispensaryWebView({
               match: rest.match
             }}
             openModal={openModal}
+            store={store}
           />
         </TabPane>
       </Tabs>
