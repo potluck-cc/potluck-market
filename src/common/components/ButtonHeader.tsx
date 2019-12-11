@@ -36,6 +36,7 @@ export default function Header({
       }),
       position: "absolute",
       top: 0,
+      zIndex: 999,
       ...containerStyle
     },
     wrapper: {

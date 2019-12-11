@@ -13,6 +13,10 @@ export default gql`
       expiration
       email
       phone
+      marketToken
+      marketWebToken
+      stateId
+      medCard
     }
   }
 `;

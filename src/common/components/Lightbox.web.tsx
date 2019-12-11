@@ -4,7 +4,7 @@ import LightboxWeb from "react-image-lightbox";
 type LightboxProps = {
   isImageModalVisible: boolean;
   close: Dispatch<boolean>;
-  images: [];
+  images: string[];
 };
 
 function Lightbox({ isImageModalVisible, close, images }: LightboxProps) {

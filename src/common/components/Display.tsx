@@ -11,7 +11,7 @@ import {
 import { Transition } from "react-navigation-fluid-transitions";
 import { Image as CacheImage } from "react-native-expo-image-cache";
 import { useDimensions, Colors, isIphoneXorAbove, isTablet } from "common";
-import { isMobile } from "react-device-detect";
+import { isMobile, isBrowser } from "react-device-detect";
 import Svg, { Circle, G, Defs, ClipPath, Image } from "react-native-svg";
 import { Icon } from "react-native-elements";
 
@@ -27,6 +27,7 @@ type DisplayProps = {
   renderMainBtn?: boolean;
   aspectRatio?: string;
   renderSvg?: boolean;
+  icon?: () => JSX.Element;
 };
 
 function Display({
@@ -39,12 +40,14 @@ function Display({
   onBtnPress = () => {},
   renderMainBtn = false,
   aspectRatio,
-  renderSvg = false
+  renderSvg = false,
+  icon
 }: DisplayProps) {
   const {
     heightToDP,
     widthToDP,
-    dimensions: { height }
+    dimensions: { height },
+    isLandscape
   } = useDimensions();
 
   // const bottomTabPadding =
@@ -65,8 +68,40 @@ function Display({
   }
 
   function renderImage() {
+    if (
+      (Platform.OS === "web" && isBrowser) ||
+      (Platform.OS === "web" && isLandscape)
+    ) {
+      return (
+        <DefaultImage
+          source={
+            imageSource
+              ? { uri: imageSource }
+              : require("assets/images/potluck_logo.png")
+          }
+          style={{
+            width: isLandscape
+              ? widthToDP("100%")
+              : isTablet()
+              ? widthToDP("100%")
+              : widthToDP("50%"),
+            // width: widthToDP("100%"),
+            height:
+              isMobile && isLandscape ? heightToDP("80%") : heightToDP("50%")
+          }}
+          resizeMode={
+            isMobile && isLandscape
+              ? "stretch"
+              : isTablet()
+              ? "contain"
+              : "contain"
+          }
+        />
+      );
+    }
+
     if (!renderSvg) {
-      if (Platform.OS !== "web") {
+      if (Platform.OS !== "web" && imageSource) {
         const uri = imageSource;
         const preview = { uri: imageSource };
         return (
@@ -79,8 +114,21 @@ function Display({
       } else {
         return (
           <DefaultImage
-            source={{ uri: imageSource }}
-            style={{ width: widthToDP("80%"), height: heightToDP("30%") }}
+            source={
+              imageSource
+                ? { uri: imageSource }
+                : require("assets/images/potluck_logo.png")
+            }
+            style={{
+              width: Platform.select({
+                default: widthToDP("80%"),
+                web: isMobile ? widthToDP("80%") : widthToDP("30%")
+              }),
+              height: Platform.select({
+                default: heightToDP("30%"),
+                web: isMobile ? heightToDP("30%") : heightToDP("10%")
+              })
+            }}
             resizeMode="contain"
           />
         );
@@ -148,7 +196,7 @@ function Display({
                     ? heightToDP("18%")
                     : heightToDP("20%")
                 }
-                r={isTablet() ? widthToDP("60%") : widthToDP("65%")}
+                r={isTablet() ? widthToDP("55%") : widthToDP("65%")}
               />
             </ClipPath>
           </Defs>
@@ -178,7 +226,7 @@ function Display({
               href={
                 imageSource
                   ? { uri: imageSource }
-                  : require("assets/images/potluck_default.png")
+                  : require("assets/images/potluck_logo.png")
               }
               clipPath="#clip"
               height="100%"
@@ -216,7 +264,14 @@ function Display({
           activeOpacity={0.8}
           disabled={imagePressDisabled}
           style={{
-            alignItems: !renderSvg ? "center" : null
+            alignItems: Platform.select({
+              default: !renderSvg ? "center" : null,
+              web: "center"
+            }),
+            marginTop: Platform.select({
+              default: null,
+              web: (isBrowser && !isTablet() && 10) || null
+            })
           }}
         >
           {renderImage()}
@@ -226,7 +281,7 @@ function Display({
           <TouchableOpacity
             onPress={() => onBtnPress()}
             style={{
-              marginTop: renderSvg ? -height / 7 : null,
+              marginTop: isLandscape ? -20 : renderSvg ? -height / 7 : null,
               backgroundColor: Colors.medGreen,
               borderColor: Colors.medGreen,
               width: 100,
@@ -246,7 +301,11 @@ function Display({
             }}
             activeOpacity={0.6}
           >
-            <Icon name="align-right" size={60} color="white" type="feather" />
+            {icon ? (
+              icon()
+            ) : (
+              <Icon name="align-right" size={60} color="white" type="feather" />
+            )}
           </TouchableOpacity>
         )}
 

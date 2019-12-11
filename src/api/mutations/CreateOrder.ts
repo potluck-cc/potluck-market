@@ -2,33 +2,38 @@ import gql from "graphql-tag";
 
 export default gql`
   mutation CreateOrder(
-    $store: String!
-    $user: String!
+    $store: AWSJSON!
+    $customer: AWSJSON!
     $total: Float!
-    $date: String!
-    $products: AWSJSON
-    $time: String!
-    $storeID: String
-    $subtotal: Float
-    $tax: Float
+    $expectedCompletionDate: AWSTimestamp!
+    $createdAt: AWSTimestamp!
+    $products: AWSJSON!
+    $storeId: ID!
+    $customerId: ID!
     $discount: Float
+    $subtotal: Float!
+    $code: String!
+    $tax: Float
     $discountDisplayValue: String
     $subtotalDisplayValue: String
     $taxDisplayValue: String
     $totalDisplayValue: String
     $delivery: Boolean
-    $pickup: Boolean
+    $pickup: Boolean!
+    $companyId: ID!
   ) {
     createOrder(
       input: {
         store: $store
-        user: $user
+        customer: $customer
+        customerId: $customerId
         total: $total
-        date: $date
+        code: $code
+        createdAt: $createdAt
         status: new
         products: $products
-        time: $time
-        storeID: $storeID
+        companyId: $companyId
+        storeId: $storeId
         subtotal: $subtotal
         tax: $tax
         discount: $discount
@@ -38,38 +43,51 @@ export default gql`
         totalDisplayValue: $totalDisplayValue
         delivery: $delivery
         pickup: $pickup
+        expectedCompletionDate: $expectedCompletionDate
       }
     ) {
       id
+      storeId
+      createdAt
+      expectedCompletionDate
       total
-      subtotal
-      tax
-      discount
-      date
-      status
-      time
-      storeID
-      discountDisplayValue
-      subtotalDisplayValue
-      taxDisplayValue
+      code
       totalDisplayValue
-      delivery
-      pickup
-      user {
+      status
+      pos
+      subtotal
+      subtotalDisplayValue
+      tax
+      taxDisplayValue
+      discount
+      discountDisplayValue
+      customer {
         id
         firstname
         lastname
-        patientID
         phone
+        street
+        city
+        state
+        stateId
+        medCard
+        marketToken
+        marketWebToken
       }
       products {
-        product {
-          name
+        item {
+          id
+          quantity
+          productType
+          isCannabisProduct
+          price
+          product {
+            id
+            name
+          }
         }
-        productType
         quantity
-        price
-        isCannabisProduct
+        requestedGrams
         option {
           amount
           weight

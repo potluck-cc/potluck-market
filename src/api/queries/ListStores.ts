@@ -2,8 +2,10 @@ import gql from "graphql-tag";
 
 export default gql`
   query ListStores {
-    listStores(filter: { public: { eq: true } }) {
+    # listStores(filter: { public: { eq: true } }) {
+    listStores {
       items {
+        companyId
         id
         name
         street
@@ -13,36 +15,16 @@ export default gql`
         phone
         latitude
         longitude
+        pickup
         link
         logo
         storefrontImage
         maxDays
+        slug
         hours {
           day
           endTime
           startTime
-        }
-        inventory {
-          items {
-            id
-            productType
-            image
-            price
-            isCannabisProduct
-            description
-            thc
-            cbd
-            strainType
-            options {
-              amount
-              weight
-            }
-            product {
-              id
-              name
-              slug
-            }
-          }
         }
       }
     }

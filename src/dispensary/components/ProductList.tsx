@@ -1,19 +1,27 @@
-import React from "react";
-import { StyleSheet, Platform } from "react-native";
-import { List } from "react-native-ui-kitten";
+import React, { memo } from "react";
+import { StyleSheet, Platform, RefreshControl } from "react-native";
+import { List, Text } from "react-native-ui-kitten";
 import { Card, CardSize } from "common/components";
 import { useDimensions, isTablet } from "common";
 import { isBrowser, isMobile } from "react-device-detect";
 
 type ProductListProps = {
-  products: import("@potluckmarket/louis").InventoryItem[];
-  store: import("@potluckmarket/louis").Store;
-  navigate: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >["navigate"];
+  products: import("@potluckmarket/types").InventoryItem[] | [];
+  store: import("@potluckmarket/types").Store;
+  navigate:
+    | import("react-navigation").NavigationScreenProp<
+        import("react-navigation").NavigationState,
+        import("react-navigation").NavigationParams
+      >["navigate"]
+    | null;
   onScroll?: () => void;
-  openModal?: (item: import("@potluckmarket/louis").InventoryItem) => void;
+  openModal?: (
+    item: import("@potluckmarket/types").InventoryItem
+  ) => void | null;
+  header: JSX.Element;
+  footer: JSX.Element;
+  onEndReached: () => void;
+  refetching: boolean;
 };
 
 export default function ProductList({
@@ -21,7 +29,11 @@ export default function ProductList({
   navigate,
   onScroll,
   store,
-  openModal = () => {}
+  openModal = () => {},
+  header,
+  footer,
+  onEndReached = () => {},
+  refetching
 }: ProductListProps) {
   const { dimensions, heightToDP, widthToDP } = useDimensions();
 
@@ -29,12 +41,12 @@ export default function ProductList({
     container: {
       height: Platform.select({
         web: heightToDP("100%"),
-        android: "100%"
+        default: "100%"
       }),
       flex: 1,
       marginBottom: Platform.select({
-        ios: 50,
-        android: 50
+        ios: 110,
+        android: 110
       })
     }
   });
@@ -48,7 +60,7 @@ export default function ProductList({
 
   const maximumNumberOfItems = 3;
 
-  function renderItem({ item }) {
+  function renderItem({ item, index }) {
     const image = item.image ? item.image : store.logo ? store.logo : null;
 
     return (
@@ -60,28 +72,11 @@ export default function ProductList({
         cardSize={CardSize.small}
         containerStyle={{
           width: cardWidth,
-          height: Platform.select({
-            web: heightToDP("60%"),
-            android: heightToDP("40%"),
-            ios: heightToDP("40%")
-          })
+          height: heightToDP("40%")
         }}
         onPress={() => {
           if (Platform.OS === "web") {
-            if (isMobile) {
-              console.log(item);
-              navigate(
-                isBrowser
-                  ? `/menu/product/${item.product.slug}`
-                  : `/product/${item.product.slug}`,
-                {
-                  store,
-                  product: item
-                }
-              );
-            } else {
-              openModal(item);
-            }
+            openModal(item);
           } else {
             navigate("Product", {
               product: item,
@@ -101,6 +96,7 @@ export default function ProductList({
       style={styles.container}
       data={products}
       onEndReachedThreshold={0.5}
+      onEndReached={() => {}}
       maxToRenderPerBatch={6}
       columnWrapperStyle={{
         justifyContent: "space-around"
@@ -110,6 +106,11 @@ export default function ProductList({
           ? maximumNumberOfItems
           : numberOfItems
       }
+      keyExtractor={item => item.id}
+      ListHeaderComponent={header}
+      ListFooterComponent={footer}
+      refreshing={refetching}
+      refreshControl={<RefreshControl refreshing={refetching} />}
     />
   );
 }

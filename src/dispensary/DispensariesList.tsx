@@ -55,7 +55,7 @@ function DispensaryList(props: RNWebComponent) {
   function renderItem({
     item
   }: {
-    item: import("@potluckmarket/louis").Store;
+    item: import("@potluckmarket/types").Store;
     index: number;
   }) {
     const image = item.storefrontImage
@@ -78,9 +78,12 @@ function DispensaryList(props: RNWebComponent) {
         }}
         onPress={() => {
           if (Platform.OS === "web") {
-            props.history.push(`/dispensary/${slugify(item.name)}`, [
-              { store: item }
-            ]);
+            props.history.push(
+              `/dispensary/usa-${item.state.toLowerCase()}-${item.city.toLowerCase()}/${
+                item.slug
+              }`,
+              [{ store: item }]
+            );
           } else {
             props.navigation.navigate("Store", {
               store: item

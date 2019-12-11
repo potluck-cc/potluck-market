@@ -1,25 +1,43 @@
-import React, { memo, useState, useEffect, Suspense, lazy } from "react";
+import React, {
+  memo,
+  useState,
+  useEffect,
+  Suspense,
+  useContext,
+  lazy
+} from "react";
+import AppContext from "appcontext";
 import { View, Platform, ActivityIndicator, StyleSheet } from "react-native";
 import { useTimer, slugify, RNWebComponent, Colors, isTablet } from "common";
 import { Text } from "react-native-ui-kitten";
 import { Analytics } from "aws-amplify";
-import { Lightbox } from "./components";
+import { Lightbox } from "common/components";
 import { isBrowser } from "react-device-detect";
 import { scale } from "react-native-size-matters";
+import { appsyncFetch, OperationType } from "@potluckmarket/ella";
+import { FindStoreByMetadata } from "queries";
+import { getStoreWithMetadata } from "./functions";
 
 const Layout = lazy(() =>
   Platform.OS === "web"
-    ? isBrowser
+    ? isBrowser && !isTablet()
       ? import("./components/SingleDispensaryWebView")
       : import("./components/SingleDispensaryMobileView")
     : import("./components/SingleDispensaryMobileView")
 );
 
 function SingleStore(props: RNWebComponent) {
-  const store: import("@potluckmarket/louis").Store =
+  const { client } = useContext(AppContext);
+
+  const storeFromState: import("@potluckmarket/types").Store =
     Platform.OS === "web"
-      ? props.location.state[0].store
-      : props.navigation.getParam("store", {});
+      ? (props.location.state &&
+          props.location.state.length &&
+          props.location.state[0].store) ||
+        null
+      : props.navigation.getParam("store", null);
+
+  const [store, setStore] = useState(storeFromState);
 
   const [isImageModalVisible, setIsImageModalVisible] = useState(false);
 
@@ -29,32 +47,59 @@ function SingleStore(props: RNWebComponent) {
 
   useEffect(() => {
     start();
+    initialize();
 
     return () => {
       const visitTime = end();
-      recordPageVisit(visitTime);
+      // recordPageVisit(visitTime);
     };
   }, []);
 
-  function recordPageVisit(visitTime: number) {
-    if (store && store.name) {
-      Analytics.record({
-        name: "dispensaryVisit",
-        attributes: {
-          dispensaryName: store.name
-        },
-        metrics: {
-          secondsBrowsed: visitTime
-        }
-      });
-    } else {
-      Analytics.record({
-        name: "dispensaryVisit",
-        metrics: {
-          secondsBrowsed: visitTime
+  async function initialize() {
+    if (!store) {
+      let metadata;
+
+      if (Platform.OS === "web") {
+        const {
+          match: {
+            params: { location, slug }
+          }
+        } = props;
+        metadata = `${location}-${slug}`;
+      }
+
+      await getStoreWithMetadata({
+        metadata,
+        client,
+        onSuccess: store => setStore(store),
+        onFailure: () => {
+          if (Platform.OS === "web") {
+            props.history.push("/");
+          }
         }
       });
     }
+  }
+
+  function recordPageVisit(visitTime: number) {
+    // if (store && store.name) {
+    //   Analytics.record({
+    //     name: "dispensaryVisit",
+    //     attributes: {
+    //       dispensaryName: store.name
+    //     },
+    //     metrics: {
+    //       secondsBrowsed: visitTime
+    //     }
+    //   });
+    // } else {
+    //   Analytics.record({
+    //     name: "dispensaryVisit",
+    //     metrics: {
+    //       secondsBrowsed: visitTime
+    //     }
+    //   });
+    // }
   }
 
   function renderHours(hours) {
@@ -72,33 +117,9 @@ function SingleStore(props: RNWebComponent) {
     });
   }
 
-  function renderLightbox() {
-    let images = [];
-
-    if (Platform.OS === "web") {
-      images = [store.storefrontImage];
-    } else {
-      images = [
-        {
-          source: {
-            uri: store && store.storefrontImage ? store.storefrontImage : null
-          }
-        }
-      ];
-    }
-
-    return (
-      <Lightbox
-        images={images}
-        isImageModalVisible={isImageModalVisible}
-        close={() => setIsImageModalVisible(false)}
-      />
-    );
-  }
-
   function goBack() {
     if (Platform.OS === "web") {
-      props.history.goBack();
+      props.history.push("/");
     } else {
       props.navigation.goBack();
     }
@@ -110,15 +131,26 @@ function SingleStore(props: RNWebComponent) {
 
   function goToMenu() {
     if (Platform.OS === "web") {
-      props.history.push(`/dispensary/${slugify(store.name)}/menu`, [
-        { store }
-      ]);
+      props.history.push(
+        `/dispensary/usa-${store.state.toLowerCase()}-${store.city.toLowerCase()}/${
+          store.slug
+        }/menu`,
+        [{ store }]
+      );
     } else {
       props.navigation.navigate("Menu", {
         menu: true,
         store
       });
     }
+  }
+
+  if (!store) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="small" color={Colors.green} />
+      </View>
+    );
   }
 
   return (
@@ -134,7 +166,13 @@ function SingleStore(props: RNWebComponent) {
         goBack={goBack}
         onImagePress={onImagePress}
         goToMenu={goToMenu}
-        renderLightbox={renderLightbox}
+        renderLightbox={() => (
+          <Lightbox
+            images={[store.storefrontImage]}
+            isImageModalVisible={isImageModalVisible}
+            close={() => setIsImageModalVisible(false)}
+          />
+        )}
         renderHours={renderHours}
         {...props}
       />

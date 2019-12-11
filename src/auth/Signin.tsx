@@ -13,19 +13,12 @@ import { Icon } from "react-native-elements";
 import { useAuth } from "@potluckmarket/ella";
 import { Auth } from "aws-amplify";
 
-import { Colors } from "common";
+import { Colors, RNWebComponent } from "common";
 import { ButtonHeader } from "common/components";
 import AppContext from "appcontext";
 import { isBrowser } from "react-device-detect";
 
-type Props = {
-  navigation?: import("react-navigation").NavigationScreenProp<
-    import("react-navigation").NavigationState,
-    import("react-navigation").NavigationParams
-  >;
-};
-
-function SignIn(props: Props) {
+function SignIn(props: RNWebComponent) {
   const { initializeApp, currentAuthenticatedUser } = useContext(AppContext);
   const {
     handleLogin,

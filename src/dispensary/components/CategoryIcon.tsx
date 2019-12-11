@@ -1,16 +1,16 @@
-import React from "react";
+import React, { memo } from "react";
 import {
-  View,
   Image,
   StyleSheet,
   ImageSourcePropType,
   ViewStyle,
   ImageStyle,
+  TouchableOpacity,
   Platform
 } from "react-native";
 import { useDimensions } from "common";
+import { isMobile } from "react-device-detect";
 import { TouchableWithoutFeedback } from "react-native-gesture-handler";
-import { isMobile, isBrowser } from "react-device-detect";
 
 type CategoryIconProps = {
   source: ImageSourcePropType;
@@ -23,7 +23,7 @@ export default function CategoryIcon({
   source,
   containerStyle,
   imageStyle,
-  onPress
+  onPress = () => {}
 }: CategoryIconProps) {
   const { widthToDP } = useDimensions();
 
@@ -31,9 +31,8 @@ export default function CategoryIcon({
     container: {
       zIndex: 999,
       width: Platform.select({
-        web: widthToDP("15%"),
-        ios: widthToDP("25%"),
-        android: widthToDP("25%")
+        default: widthToDP("25%"),
+        web: !isMobile ? widthToDP("19%") : widthToDP("25%")
       }),
       borderRadius: 10,
       height: 45,
@@ -49,9 +48,9 @@ export default function CategoryIcon({
   });
 
   return Platform.OS === "web" ? (
-    <View style={styles.container}>
+    <TouchableOpacity style={styles.container} onPress={onPress}>
       <Image style={styles.image} source={source} />
-    </View>
+    </TouchableOpacity>
   ) : (
     <TouchableWithoutFeedback style={styles.container} onPress={onPress}>
       <Image style={styles.image} source={source} />

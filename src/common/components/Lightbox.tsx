@@ -4,13 +4,16 @@ import LightboxNative from "react-native-image-view";
 type LightboxProps = {
   isImageModalVisible: boolean;
   close: Dispatch<boolean>;
-  images: [];
+  images: string[];
 };
 
 function Lightbox({ isImageModalVisible, close, images }: LightboxProps) {
+  const processedImages = images.map(image => ({
+    source: { uri: image ? image : null }
+  }));
   return (
     <LightboxNative
-      images={images}
+      images={processedImages}
       imageIndex={0}
       isVisible={isImageModalVisible}
       onClose={() => close(false)}

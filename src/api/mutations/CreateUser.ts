@@ -16,6 +16,9 @@ export default gql`
     $street: String
     $city: String
     $marketToken: String
+    $stateId: String
+    $medCard: String
+    $marketWebToken: String
   ) {
     createUser(
       input: {
@@ -33,6 +36,9 @@ export default gql`
         street: $street
         city: $city
         marketToken: $marketToken
+        stateId: $stateId
+        medCard: $medCard
+        marketWebToken: $marketWebToken
       }
     ) {
       id
@@ -45,6 +51,8 @@ export default gql`
       expiration
       email
       phone
+      marketToken
+      marketWebToken
     }
   }
 `;

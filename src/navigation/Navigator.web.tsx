@@ -5,7 +5,6 @@ import {
   DispensariesList,
   SingleDispensary,
   Menu,
-  Product,
   SearchResults
 } from "dispensary";
 import {
@@ -15,9 +14,10 @@ import {
   ChangeAttributes,
   ChangeUsername
 } from "auth";
-import { Settings } from "profile";
+import { Settings, Verification } from "profile";
 import { Menu as Topbar } from "antd";
 import { isMobile } from "react-device-detect";
+import { PreviousOrders } from "orders";
 import "./web.css";
 import "antd/dist/antd.css";
 import "react-image-lightbox/style.css";
@@ -25,8 +25,6 @@ import "semantic-ui-css/semantic.min.css";
 
 function DefaultLayout({ component: Component, ...rest }) {
   const { currentAuthenticatedUser } = useContext(AppContext);
-
-  // console.log(currentAuthenticatedUser);
 
   window.scrollTo(0, 0);
 
@@ -42,7 +40,9 @@ function DefaultLayout({ component: Component, ...rest }) {
               matchProps.location.pathname === "/" ||
               matchProps.location.pathname.includes("dispensary")
                 ? "1"
-                : "2"
+                : matchProps.location.pathname.includes("orders")
+                ? "2"
+                : "3"
             ]}
             style={{ lineHeight: "64px", backgroundColor: "#46B060" }}
           >
@@ -52,12 +52,15 @@ function DefaultLayout({ component: Component, ...rest }) {
             <Topbar.Item key="1">
               <Link to="/">Dispensaries</Link>
             </Topbar.Item>
+            <Topbar.Item key="2">
+              <Link to="/orders">Orders</Link>
+            </Topbar.Item>
             {currentAuthenticatedUser ? (
-              <Topbar.Item key="2">
+              <Topbar.Item key="3">
                 <Link to="/settings">Settings</Link>
               </Topbar.Item>
             ) : (
-              <Topbar.Item key="2">
+              <Topbar.Item key="3">
                 <Link to="/signin">Sign In</Link>
               </Topbar.Item>
             )}
@@ -74,26 +77,46 @@ function AppRouter() {
     <Router>
       <Fragment>
         <DefaultLayout path="/" exact component={DispensariesList} />
+
         {isMobile ? (
-          <Route exact path="/dispensary/:slug" component={SingleDispensary} />
+          <Fragment>
+            <Route
+              exact
+              path="/dispensary/:location/:slug/"
+              component={SingleDispensary}
+            />
+
+            <Route
+              exact
+              path="/dispensary/:location/:slug/menu/:product"
+              component={Menu}
+            />
+          </Fragment>
         ) : (
-          <DefaultLayout
-            exact
-            path="/dispensary/:slug"
-            component={SingleDispensary}
-          />
+          <Fragment>
+            <DefaultLayout
+              exact
+              path="/dispensary/:location/:slug/"
+              component={SingleDispensary}
+            />
+
+            <DefaultLayout
+              exact
+              path="/dispensary/:location/:slug/menu/:product"
+              component={Menu}
+            />
+          </Fragment>
         )}
-        <Route exact path="/dispensary/:slug/menu" component={Menu} />
-        <Route
-          exact
-          path="/dispensary/:slug/menu/product/:slug"
-          component={Product}
-        />
+
+        <Route exact path="/dispensary/:location/:slug/menu" component={Menu} />
+
+        {/* 
         <DefaultLayout
           exact
           path="/dispensary/:slug/menu/search/:query"
           component={SearchResults}
-        />
+        /> */}
+
         <DefaultLayout path="/signin" component={Signin} />
         <DefaultLayout path="/signup" component={Signup} />
         <DefaultLayout path="/forgotpassword" component={ForgotPassword} />
@@ -101,6 +124,8 @@ function AppRouter() {
         <DefaultLayout path="/changenumber" component={ChangeUsername} />
         <DefaultLayout path="/updateprofile" component={ChangeAttributes} />
         <DefaultLayout path="/changepassword" component={ForgotPassword} />
+        <DefaultLayout path="/orders" component={PreviousOrders} />
+        <DefaultLayout path="/verification" component={Verification} />
       </Fragment>
     </Router>
   );
