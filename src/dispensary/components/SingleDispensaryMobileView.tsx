@@ -8,7 +8,7 @@ import {
   Platform,
   View
 } from "react-native";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 import { Display, ButtonHeader } from "common/components";
 import { Colors, isTablet } from "common";
 import { scale } from "react-native-size-matters";
@@ -31,8 +31,8 @@ export default function SingleDispensaryMobileView({
           store.storefrontImage
             ? store.storefrontImage
             : store.logo
-            ? store.logo
-            : null
+              ? store.logo
+              : null
         }
         onImagePress={() => onImagePress(true)}
         imagePressDisabled={!store || !store.storefrontImage}
@@ -81,7 +81,7 @@ export default function SingleDispensaryMobileView({
         )}
       />
 
-      {store && store.storefrontImage && renderLightbox()}
+      {store.storefrontImage ? renderLightbox() : null}
     </ScrollView>
   );
 }

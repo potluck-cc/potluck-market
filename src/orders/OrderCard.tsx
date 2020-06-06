@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, View, Image, Platform } from "react-native";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 import { useDimensions, isTablet } from "common";
 import { Divider, GenericButton } from "common/components";
 import { ProductList } from "cart";
@@ -34,7 +34,9 @@ export default function({
             ? isMobile
               ? heightToDP("150%")
               : heightToDP("65%")
-            : heightToDP("80%"),
+            : isTablet()
+            ? heightToDP("55%")
+            : heightToDP("55%"),
           width: Platform.select({
             default: isTablet() ? widthToDP("70%") : widthToDP("100%"),
             web: (isBrowser && widthToDP("50%")) || widthToDP("100%")
@@ -92,7 +94,10 @@ export default function({
           }}
           listStyle={{
             maxHeight: 100,
-            overflow: "hidden"
+            overflow: "hidden",
+            alignItems: Platform.select({
+              web: isMobile ? undefined : "center"
+            })
           }}
           textStyle={{ color: "black" }}
           listKey={listKey}

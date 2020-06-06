@@ -12,3 +12,10 @@ export { useTimer } from "./useTimer";
 export { slugify } from "./slugify";
 export { stackHistory } from "./stackHistory";
 export { RNWebComponent } from "./types";
+export {
+  getLocationPermissions,
+  getLocationAsync,
+  getLocationRules,
+  SupportedLocations,
+  LocationRules
+} from "./location";

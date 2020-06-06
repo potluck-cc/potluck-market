@@ -9,13 +9,11 @@ import React, {
 import AppContext from "appcontext";
 import { View, Platform, ActivityIndicator, StyleSheet } from "react-native";
 import { useTimer, slugify, RNWebComponent, Colors, isTablet } from "common";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 import { Analytics } from "aws-amplify";
 import { Lightbox } from "common/components";
 import { isBrowser } from "react-device-detect";
 import { scale } from "react-native-size-matters";
-import { appsyncFetch, OperationType } from "@potluckmarket/ella";
-import { FindStoreByMetadata } from "queries";
 import { getStoreWithMetadata } from "./functions";
 
 const Layout = lazy(() =>
@@ -32,14 +30,16 @@ function SingleStore(props: RNWebComponent) {
   const storeFromState: import("@potluckmarket/types").Store =
     Platform.OS === "web"
       ? (props.location.state &&
-          props.location.state.length &&
-          props.location.state[0].store) ||
-        null
+        props.location.state.length &&
+        props.location.state[0].store) ||
+      null
       : props.navigation.getParam("store", null);
 
   const [store, setStore] = useState(storeFromState);
 
   const [isImageModalVisible, setIsImageModalVisible] = useState(false);
+
+  const [loading, isLoading] = useState(true);
 
   const date = new Date();
 
@@ -56,29 +56,37 @@ function SingleStore(props: RNWebComponent) {
   }, []);
 
   async function initialize() {
-    if (!store) {
-      let metadata;
-
-      if (Platform.OS === "web") {
-        const {
-          match: {
-            params: { location, slug }
-          }
-        } = props;
-        metadata = `${location}-${slug}`;
-      }
-
-      await getStoreWithMetadata({
-        metadata,
-        client,
-        onSuccess: store => setStore(store),
-        onFailure: () => {
-          if (Platform.OS === "web") {
-            props.history.push("/");
-          }
-        }
-      });
+    if (!isLoading) {
+      isLoading(true);
     }
+
+    let metadata;
+
+    if (Platform.OS === "web") {
+      const {
+        match: {
+          params: { location, slug }
+        }
+      } = props;
+      metadata = `${location}-${slug}`;
+    } else {
+      metadata = `usa-${store.state.toLowerCase()}-${store.city.toLowerCase()}-${store.slug}`
+    }
+
+    await getStoreWithMetadata({
+      metadata,
+      client,
+      onSuccess: store => {
+        isLoading(false);
+        setStore(store)
+      },
+      onFailure: () => {
+        isLoading(false);
+        if (Platform.OS === "web") {
+          props.history.push("/");
+        }
+      }
+    });
   }
 
   function recordPageVisit(visitTime: number) {
@@ -102,7 +110,7 @@ function SingleStore(props: RNWebComponent) {
     // }
   }
 
-  function renderHours(hours) {
+  function renderHours(hours = []) {
     return hours.map((timeblock, index) => {
       const str = `${timeblock.day}: ${timeblock.startTime} - ${timeblock.endTime}`;
       return (
@@ -133,7 +141,7 @@ function SingleStore(props: RNWebComponent) {
     if (Platform.OS === "web") {
       props.history.push(
         `/dispensary/usa-${store.state.toLowerCase()}-${store.city.toLowerCase()}/${
-          store.slug
+        store.slug
         }/menu`,
         [{ store }]
       );
@@ -145,7 +153,7 @@ function SingleStore(props: RNWebComponent) {
     }
   }
 
-  if (!store) {
+  if (!store || loading) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="small" color={Colors.green} />
@@ -168,7 +176,7 @@ function SingleStore(props: RNWebComponent) {
         goToMenu={goToMenu}
         renderLightbox={() => (
           <Lightbox
-            images={[store.storefrontImage]}
+            images={store.storefrontImage ? [store.storefrontImage] : []}
             isImageModalVisible={isImageModalVisible}
             close={() => setIsImageModalVisible(false)}
           />

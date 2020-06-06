@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Amplify, { Auth } from "aws-amplify";
 import awsConfig from "./aws-exports";
 import { mapping, light as lightTheme } from "@eva-design/eva";
-import { ApplicationProvider } from "react-native-ui-kitten";
+import { ApplicationProvider } from "@ui-kitten/components";
 import Navigator from "./src/navigation/Navigator";
 import AppContext from "appcontext";
 import * as Permissions from "expo-permissions";

@@ -1,13 +1,14 @@
 import React from "react";
-import { StyleSheet, View, ViewStyle, TextStyle } from "react-native";
+import { StyleSheet, View, ViewStyle, TextStyle, Platform } from "react-native";
 import { Avatar, Badge } from "react-native-elements";
-import { Text, List } from "react-native-ui-kitten";
+import { Text, List } from "@ui-kitten/components";
 import { useSelector } from "react-redux";
 import { CART_STATE } from "src/reducers/cart";
+import { isMobile } from "react-device-detect";
 
 type ProductListProps = {
   containerStyle?: ViewStyle;
-  items?: import("@potluckmarket/louis").InventoryItem[];
+  items?: import("@potluckmarket/types").InventoryItem[];
   listStyle?: ViewStyle;
   textStyle?: TextStyle;
   listKey?: string;
@@ -111,12 +112,30 @@ export default function({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      <List
-        data={items}
-        renderItem={renderProducts}
-        style={[{ backgroundColor: "transparent" }, listStyle]}
-        listKey={listKey}
-      />
+      {items.length < 1 ? (
+        <Text
+          style={[
+            styles.totalText,
+            textStyle,
+            listStyle,
+            { textAlign: "center" }
+          ]}
+        >
+          There are no items in your cart!
+        </Text>
+      ) : (
+        <List
+          data={items}
+          renderItem={renderProducts}
+          style={[{ backgroundColor: "transparent" }, listStyle]}
+          contentContainerStyle={{
+            alignItems: Platform.select({
+              web: isMobile ? undefined : "center"
+            })
+          }}
+          listKey={listKey}
+        />
+      )}
       <View style={[styles.totalContainer, totalContainerStyle]}>
         <Text category="h6" style={[styles.totalText, textStyle]}>
           Total:
@@ -135,7 +154,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginVertical: 5
+    marginVertical: 5,
+    width: Platform.select({
+      web: isMobile ? undefined : "35vw"
+    })
   },
   productText: {
     color: "white"
@@ -145,7 +167,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "white"
+    borderBottomColor: "white",
+    paddingHorizontal: Platform.select({
+      web: isMobile ? undefined : 100
+    })
   },
   totalText: {
     color: "white"

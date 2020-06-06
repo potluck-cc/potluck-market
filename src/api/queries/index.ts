@@ -5,3 +5,5 @@ export { default as GetOrders } from "./GetOrders";
 export { default as FindStoreByMetadata } from "./FindStoreByMetadata";
 export { default as GetStoreInventory } from "./GetStoreInventory";
 export { default as ValidateCart } from "./ValidateCart";
+export { default as ListStoresByFilter } from "./ListStoresByFilter";
+export { generateStoreFilterQuery } from "./ListStoresByFilter";

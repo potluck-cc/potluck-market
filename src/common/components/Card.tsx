@@ -13,7 +13,7 @@ import {
   ImageResizeMode
 } from "react-native";
 import { Colors, Dimensions, isTablet, useDimensions } from "common";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 import { Transition } from "react-navigation-fluid-transitions";
 import { Image as CacheImage } from "react-native-expo-image-cache";
 import { scale } from "react-native-size-matters";
@@ -108,9 +108,9 @@ export default memo(function Card({
         // android: verticalScale(350)
       }),
       height: Platform.select({
-        web: heightToDP("70%"),
-        ios: isLandscape ? heightToDP("60%") : heightToDP("40%"),
-        android: heightToDP("40%")
+        web: heightToDP("50%"),
+        ios: isLandscape ? heightToDP("60%") : heightToDP("50%"),
+        android: heightToDP("50%")
       }),
       width: Platform.select({
         ios: Dimensions.width / 1.5,
@@ -186,7 +186,11 @@ export default memo(function Card({
     description: {
       textAlign: "center",
       width: "100%",
-      fontSize: isLandscape ? heightToDP("4%") : heightToDP("2%"),
+      fontSize: isLandscape
+        ? heightToDP("4%")
+        : Platform.OS === "web"
+        ? heightToDP("3%")
+        : heightToDP("2%"),
       padding: isTablet() ? scale(6) : 2,
       // lineHeight: scale(13),
       ...descriptionStyle

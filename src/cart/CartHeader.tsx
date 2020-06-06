@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Platform
 } from "react-native";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 import { useDimensions, isLandscape } from "common";
 import { isBrowser, isMobile } from "react-device-detect";
 

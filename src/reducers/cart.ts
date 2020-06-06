@@ -117,7 +117,7 @@ export default (state = initialState, action): CART_STATE => {
 
     case CartActions.SET_CURRENTLY_SHOPPING_STORE:
       return {
-        ...state,
+        ...initialState,
         currentlyShoppingStore: action.payload,
         cart: [],
         totalItemsInCart: calculateTotalItemsInCart([])

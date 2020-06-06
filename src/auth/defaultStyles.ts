@@ -17,6 +17,7 @@ export default StyleSheet.create({
   input: {
     marginTop: 5,
     marginBottom: 5,
+    minHeight: 100,
     width: Platform.select({
       android: isTablet() ? "50%" : "100%",
       ios: isTablet() ? "50%" : "100%",

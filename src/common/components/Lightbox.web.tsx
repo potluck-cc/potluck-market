@@ -7,7 +7,7 @@ type LightboxProps = {
   images: string[];
 };
 
-function Lightbox({ isImageModalVisible, close, images }: LightboxProps) {
+function Lightbox({ isImageModalVisible, close, images = [] }: LightboxProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   return (

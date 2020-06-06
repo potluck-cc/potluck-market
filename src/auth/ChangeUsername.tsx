@@ -3,7 +3,7 @@ import { View, ActivityIndicator, Platform } from "react-native";
 import Confirm from "./Confirm";
 
 import styles from "./defaultStyles";
-import { Input, Button, Text } from "react-native-ui-kitten";
+import { Input, Button, Text } from "@ui-kitten/components";
 import { Icon } from "react-native-elements";
 
 import { useAuth } from "@potluckmarket/ella";

@@ -4,8 +4,8 @@ import { NormalizedCacheObject } from "apollo-cache-inmemory";
 
 export interface AppContextInterface {
   currentAuthenticatedUser:
-    | import("@potluckmarket/louis").User
-    | import("@potluckmarket/louis").Doctor
+    | import("@potluckmarket/types").User
+    | import("@potluckmarket/types").Doctor
     | null;
   setCurrentAuthenticatedUser: Dispatch<any>;
   initializeApp: (currentUser?) => Promise<void>;

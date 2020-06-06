@@ -4,33 +4,45 @@ import {
   View,
   StyleSheet,
   StatusBar,
-  Platform
+  Platform,
+  SafeAreaView
 } from "react-native";
 import { useLazyAppSyncQuery, OperationType } from "@potluckmarket/ella";
-import { ListStores } from "queries";
-import { List } from "react-native-ui-kitten";
+import { ListStores, generateStoreFilterQuery } from "queries";
+import { List, Text, Input } from "@ui-kitten/components";
 import {
   Dimensions,
   Colors,
-  isIphoneXorAbove,
-  slugify,
   useDimensions,
   RNWebComponent,
-  isTablet
+  isTablet,
+  getLocationPermissions,
+  getLocationAsync
 } from "common";
-import { Card, TextHeader } from "common/components";
-import { isBrowser } from "react-device-detect";
+import { Card, GenericButton } from "common/components";
+import { isBrowser, isMobile } from "react-device-detect";
 import AppContext from "appcontext";
+import { DispensaryListFilter } from "./components";
+import { moderateScale } from "react-native-size-matters";
+
+const distances = [
+  { text: "5mi" },
+  { text: "10mi" },
+  { text: "15mi" },
+  { text: "20mi" },
+  { text: "30mi" },
+  { text: "40mi" },
+  { text: "50mi" }
+];
+
+const defaultFilterState = {
+  pickup: false,
+  delivery: false,
+  distance: distances[0]
+};
 
 function DispensaryList(props: RNWebComponent) {
   const { client } = useContext(AppContext);
-
-  const [dispensaries, loading, fetchDispensaries] = useLazyAppSyncQuery({
-    client,
-    operationType: OperationType.query,
-    document: ListStores,
-    fetchPolicy: "network-only"
-  });
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -44,12 +56,93 @@ function DispensaryList(props: RNWebComponent) {
 
   const numOfItemsPerColumn = Math.floor(dimensions.width / (cardWidth + 40));
 
+  const [initComplete, isInitComplete] = useState(false);
+
+  const [filterState, updateFilterState] = useState(defaultFilterState);
+
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(
+    false
+  );
+
+  const [zip, setZip] = useState("");
+
+  const [geolocation, setGeolocation] = useState(null);
+
+  const [dispensaries, loading, fetchDispensaries] = useLazyAppSyncQuery({
+    client,
+    operationType: OperationType.query,
+    document:
+      filterState.pickup || filterState.delivery
+        ? generateStoreFilterQuery({
+            delivery: filterState.delivery,
+            pickup: filterState.pickup
+          })
+        : ListStores,
+    fetchPolicy: "network-only"
+  });
+
   useEffect(() => {
     initialize();
   }, []);
 
-  function initialize() {
-    fetchDispensaries();
+  useEffect(() => {
+    initialize();
+  }, [
+    filterState.distance,
+    filterState.delivery,
+    filterState.pickup,
+    geolocation
+  ]);
+
+  async function initialize() {
+    if (geolocation) {
+      await fetchDispensaries({
+        lat: geolocation.latitude,
+        lng: geolocation.longitude,
+        distance: filterState.distance.text,
+        delivery: filterState.delivery,
+        pickup: filterState.pickup
+      });
+
+      isInitComplete(true);
+    } else {
+      // setLocationPermissionDenied(true);
+
+      await getLocationPermissions({
+        onSuccess: async () => {
+          await getLocationAsync({
+            onSuccess: async location => {
+              await fetchDispensaries({
+                lat: location.latitude,
+                lng: location.longitude,
+                distance: filterState.distance.text,
+                delivery: filterState.delivery,
+                pickup: filterState.pickup
+              });
+
+              isInitComplete(true);
+            },
+            coordsOnly: true
+          });
+        },
+        onFail: () => {
+          setLocationPermissionDenied(true);
+        }
+      });
+    }
+  }
+
+  async function locateByZip() {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${zip}}&key=AIzaSyB30Evgnn_D16ZtL5qCRFzUJrj5sGY2dUo`;
+
+    const res = await fetch(url);
+
+    const { results } = (await res.json()) || null;
+
+    if (results && results.length) {
+      const loc = results[0].geometry.location;
+      setGeolocation({ latitude: loc.lat, longitude: loc.lng });
+    }
   }
 
   function renderItem({
@@ -96,7 +189,7 @@ function DispensaryList(props: RNWebComponent) {
 
   async function onRefresh() {
     setRefreshing(true);
-    await fetchDispensaries();
+    await initialize();
     setRefreshing(false);
   }
 
@@ -112,24 +205,119 @@ function DispensaryList(props: RNWebComponent) {
     }
   }
 
+  if (loading) {
+    return (
+      <SafeAreaView>
+        <DispensaryListFilter
+          filterState={filterState}
+          updateFilterState={updateFilterState}
+          distances={distances}
+        />
+
+        <View style={{ justifyContent: "center", alignItems: "center" }}>
+          <StatusBar barStyle="dark-content" animated />
+
+          <ActivityIndicator animating size="small" color={Colors.medGreen} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (
+    initComplete &&
+    !loading &&
+    dispensaries &&
+    dispensaries.geosearchStores &&
+    !dispensaries.geosearchStores.length
+  ) {
+    return (
+      <SafeAreaView>
+        <View>
+          <StatusBar barStyle="dark-content" animated />
+
+          <DispensaryListFilter
+            filterState={filterState}
+            updateFilterState={updateFilterState}
+            distances={distances}
+          />
+
+          <View
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              paddingHorizontal: 20
+            }}
+          >
+            <Text style={{ textAlign: "center", fontSize: moderateScale(12) }}>
+              No dispensaries were found. Please try adjusting your search
+              criteria.
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (locationPermissionDenied && !dispensaries.geosearchStores) {
+    return (
+      <SafeAreaView>
+        <View
+          style={{
+            padding: 25,
+            alignItems: "center",
+            justifyContent: Platform.select({
+              web: "space-between",
+              ios: "center",
+              android: "center"
+            }),
+            flex: Platform.select({
+              web: undefined,
+              default: 1
+            })
+          }}
+        >
+          <StatusBar barStyle="dark-content" animated />
+
+          <Text style={{ textAlign: "center", fontSize: moderateScale(12) }}>
+            We're unable to locate you. Please enter your zip code below so that
+            we can find dispensaries near you.
+          </Text>
+
+          <Input
+            placeholder={"07205"}
+            style={{ marginVertical: 25 }}
+            value={zip}
+            onChangeText={text => setZip(text)}
+          />
+
+          <GenericButton buttonText="Locate Me" onPress={() => locateByZip()} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <Fragment>
-      <StatusBar hidden />
+    <SafeAreaView>
+      <StatusBar barStyle="dark-content" animated />
 
       <List
-        ListHeaderComponent={() => (
-          <TextHeader title="Medical Cannabis" subtitle="Dispensaries" />
-        )}
+        ListHeaderComponent={
+          <DispensaryListFilter
+            filterState={filterState}
+            updateFilterState={updateFilterState}
+            distances={distances}
+          />
+        }
         data={
-          dispensaries && dispensaries.listStores
-            ? dispensaries.listStores.items
+          dispensaries && dispensaries.geosearchStores
+            ? dispensaries.geosearchStores
             : []
         }
-        // data={stuff}
         renderItem={renderItem}
         onRefresh={onRefresh}
         refreshing={refreshing}
         ListFooterComponent={renderListFooterComponent}
+        stickyHeaderIndices={[0]}
         contentContainerStyle={styles.container}
         numColumns={Platform.select({
           ios: 1,
@@ -142,7 +330,7 @@ function DispensaryList(props: RNWebComponent) {
           web: isBrowser ? numOfItemsPerColumn : 1
         })}
       />
-    </Fragment>
+    </SafeAreaView>
   );
 }
 
@@ -151,10 +339,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: Platform.select({
       web: "space-around"
-    }),
-    paddingTop: Platform.select({
-      android: 30,
-      ios: isIphoneXorAbove() ? 50 : 30
     }),
     backgroundColor: Colors.eggShell
   },

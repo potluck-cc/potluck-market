@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Image, StyleSheet, Platform, ScrollView } from "react-native";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 import { scale } from "react-native-size-matters";
 import { isBrowser } from "react-device-detect";
 import { useDimensions, isTablet } from "common";
@@ -23,7 +23,7 @@ export default function ProductWebView({
     },
     image: {
       width: isTablet() ? widthToDP("60%") : widthToDP("30%"),
-      height: heightToDP("50%"),
+      height: heightToDP("30%"),
       borderRadius: 15,
       boxShadow: "1px 3px 20px 1px rgba(0,0,0,.4)"
     },

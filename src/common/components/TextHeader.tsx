@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet, ViewStyle, TextStyle, Platform } from "react-native";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 import { isTablet, useDimensions } from "common";
 import { scale, verticalScale, moderateScale } from "react-native-size-matters";
 import { isBrowser } from "react-device-detect";

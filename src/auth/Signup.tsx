@@ -6,7 +6,7 @@ import {
   Platform
 } from "react-native";
 import styles from "./defaultStyles";
-import { Input, Button, Text, Layout } from "react-native-ui-kitten";
+import { Input, Button, Text, Layout } from "@ui-kitten/components";
 import { Icon } from "react-native-elements";
 import { AvoidKeyboard } from "common/components";
 import Confirm from "./Confirm";

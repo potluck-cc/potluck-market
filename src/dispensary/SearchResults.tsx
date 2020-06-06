@@ -14,12 +14,12 @@ const SearchResults = (props: RNWebComponent) => {
       ? props.location.state[0].searchQuery
       : props.navigation.getParam("searchQuery", null);
 
-  const store: import("@potluckmarket/louis").Store =
+  const store: import("@potluckmarket/types").Store =
     Platform.OS === "web"
       ? props.location.state[0].store
       : props.navigation.getParam("store", {});
 
-  const products: import("@potluckmarket/louis").InventoryItem[] =
+  const products: import("@potluckmarket/types").InventoryItem[] =
     Platform.OS === "web"
       ? props.location.state[0].products
       : props.navigation.getParam("products", null);
@@ -40,10 +40,10 @@ const SearchResults = (props: RNWebComponent) => {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState<
-    import("@potluckmarket/louis").InventoryItem | null
+    import("@potluckmarket/types").InventoryItem | null
   >(null);
 
-  function openModal(item: import("@potluckmarket/louis").InventoryItem) {
+  function openModal(item: import("@potluckmarket/types").InventoryItem) {
     setActiveMenuItem(item);
     setModalOpen(true);
   }

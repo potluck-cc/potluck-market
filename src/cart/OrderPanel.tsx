@@ -3,7 +3,7 @@ import { StyleSheet, View, TouchableOpacity, ScrollView } from "react-native";
 import { useSelector } from "react-redux";
 import { GenericButton } from "common/components";
 import { Icon } from "react-native-elements";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 import { addItemToCart } from "actions";
 import { useDispatch } from "react-redux";
 import { CART_STATE, findItemInCartById } from "reducers/cart";

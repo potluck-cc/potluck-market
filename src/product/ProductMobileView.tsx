@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import { ScrollView, View, Platform, StyleSheetProperties } from "react-native";
 import { OrderPanel } from "cart";
 import { Display, ButtonHeader, GenericButton } from "common/components";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 import { useDimensions, isIphoneXorAbove } from "common";
 import ProductActions from "./ProductActions";
 import Modal from "modal-enhanced-react-native-web";
@@ -148,7 +148,9 @@ export default function ProductMobileView({
             buttonText={
               listOfItemsInCartMatchingCurrentProductId.length
                 ? "Remove from cart"
-                : "Add to cart"
+                : Platform.OS === "web"
+                ? "Add to cart"
+                : "Learn More"
             }
             style={{
               backgroundColor: listOfItemsInCartMatchingCurrentProductId.length

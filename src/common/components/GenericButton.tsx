@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, ViewStyle, TextStyle, Platform } from "react-native";
-import { Button } from "react-native-ui-kitten";
+import { Button } from "@ui-kitten/components";
 import { Colors, useDimensions } from "common";
 import { isBrowser } from "react-device-detect";
 

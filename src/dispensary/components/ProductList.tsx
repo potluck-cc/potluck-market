@@ -1,8 +1,8 @@
 import React, { memo } from "react";
 import { StyleSheet, Platform, RefreshControl } from "react-native";
-import { List, Text } from "react-native-ui-kitten";
+import { List, Text } from "@ui-kitten/components";
 import { Card, CardSize } from "common/components";
-import { useDimensions, isTablet } from "common";
+import { useDimensions, isTablet, isIphoneXorAbove } from "common";
 import { isBrowser, isMobile } from "react-device-detect";
 
 type ProductListProps = {
@@ -45,7 +45,7 @@ export default function ProductList({
       }),
       flex: 1,
       marginBottom: Platform.select({
-        ios: 110,
+        ios: isIphoneXorAbove() ? 170 : 110,
         android: 110
       })
     }
@@ -72,7 +72,10 @@ export default function ProductList({
         cardSize={CardSize.small}
         containerStyle={{
           width: cardWidth,
-          height: heightToDP("40%")
+          height: heightToDP("40%"),
+          margin: Platform.select({
+            web: isMobile ? 0 : 10
+          })
         }}
         onPress={() => {
           if (Platform.OS === "web") {

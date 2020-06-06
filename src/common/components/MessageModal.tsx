@@ -4,7 +4,7 @@ import Modal from "./Modal";
 import { Icon } from "react-native-elements";
 import { isBrowser } from "react-device-detect";
 import GenericButton from "./GenericButton";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 
 type MessageModalProps = {
   isVisible?: boolean;

@@ -1,31 +1,38 @@
 import React, { useState } from "react";
 import { StyleSheet, View, Platform, TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
-import { Input } from "react-native-ui-kitten";
+import { Input } from "@ui-kitten/components";
 import { Colors, isIphoneXorAbove, isTablet } from "common";
 import { isBrowser } from "react-device-detect";
 
 type SearchHeaderProps = {
   secondaryComponent?: JSX.Element;
   onSearch: (query: string) => void;
+  renderLeft?: () => JSX.Element | null;
+  renderRight?: () => JSX.Element | null;
 };
 
 function SearchHeader({
   secondaryComponent,
-  onSearch = () => {}
+  onSearch = () => {},
+  renderLeft = () => null,
+  renderRight = () => null
 }: SearchHeaderProps) {
   const [query, setQuery] = useState("");
 
   function onSubmitSearch() {
-      onSearch(query);
+    onSearch(query);
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.SearchBarContainer}>
-        {secondaryComponent && (
+        {/* {secondaryComponent && (
           <View style={styles.secondaryComponent}>{secondaryComponent}</View>
-        )}
+        )} */}
+
+        {renderLeft()}
+
         <View style={styles.SearchBar}>
           <Input
             placeholder="Search"
@@ -51,6 +58,13 @@ function SearchHeader({
             }}
           />
         </View>
+
+        {renderRight()}
+
+        {/* 
+        {secondaryComponent && (
+          <View style={styles.secondaryComponent}>{secondaryComponent}</View>
+        )} */}
       </View>
     </View>
   );
@@ -61,7 +75,8 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     paddingTop: Platform.select({
       ios: isIphoneXorAbove() ? 25 : null
-    })
+    }),
+    width: "100%"
   },
   SearchBarContainer: {
     height: 50,
@@ -71,7 +86,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: Platform.select({
-      web: isBrowser ? "flex-start" : "space-evenly",
+      web: isBrowser ? "space-between" : "space-evenly",
       android: "space-evenly",
       ios: "space-evenly"
     }),

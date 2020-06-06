@@ -81,7 +81,7 @@ function Display({
           }
           style={{
             width: isLandscape
-              ? widthToDP("100%")
+              ? widthToDP("70%")
               : isTablet()
               ? widthToDP("100%")
               : widthToDP("50%"),
@@ -91,7 +91,7 @@ function Display({
           }}
           resizeMode={
             isMobile && isLandscape
-              ? "stretch"
+              ? "contain"
               : isTablet()
               ? "contain"
               : "contain"
@@ -281,7 +281,11 @@ function Display({
           <TouchableOpacity
             onPress={() => onBtnPress()}
             style={{
-              marginTop: isLandscape ? -20 : renderSvg ? -height / 7 : null,
+              marginTop: isLandscape
+                ? -20
+                : renderSvg
+                ? -height / (isIphoneXorAbove() ? 6 : 8)
+                : null,
               backgroundColor: Colors.medGreen,
               borderColor: Colors.medGreen,
               width: 100,
@@ -319,6 +323,4 @@ function Display({
   return <DisplayContainer>{renderDisplay()}</DisplayContainer>;
 }
 
-const Component = Platform.OS === "web" ? Display : Display;
-
-export default Component;
+export default Display;

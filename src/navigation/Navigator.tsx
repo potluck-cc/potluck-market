@@ -105,37 +105,11 @@ const ProfileStack = createStackNavigator(
   }
 );
 
-const AdsStack = createStackNavigator(
-  {
-    PotluckSuite,
-    Signin,
-    Signup,
-    Confirm,
-    ForgotPassword
-  },
-  {
-    defaultNavigationOptions: {
-      header: null
-    },
-    navigationOptions: {
-      tabBarIcon: ({ focused }) => (
-        <Icon
-          name="layers"
-          type="material-community"
-          color={focused ? Colors.green : "white"}
-          size={25}
-        />
-      )
-    }
-  }
-);
-
 const App = createBottomTabNavigator(
   {
     HomeStack,
     OrderStack,
-    ProfileStack,
-    AdsStack
+    ProfileStack
   },
   {
     tabBarOptions: {

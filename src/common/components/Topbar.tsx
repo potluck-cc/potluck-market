@@ -5,7 +5,7 @@ import {
   Platform,
   StatusBar
 } from "react-native";
-import { TopNavigation } from "react-native-ui-kitten";
+import { TopNavigation } from "@ui-kitten/components";
 import { Icon } from "react-native-elements";
 import { Colors, isIphoneXorAbove } from "common";
 

@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, lazy, Suspense } from "react";
 import { StyleSheet, View, Platform, ActivityIndicator } from "react-native";
-import { Text } from "react-native-ui-kitten";
+import { Text } from "@ui-kitten/components";
 import {
   Colors,
   isTablet,
@@ -288,10 +288,11 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: scale(16),
-    padding: isTablet() ? scale(13) : 0,
+    padding: isTablet() ? scale(13) : scale(40),
     lineHeight: scale(20),
     textAlign: "center",
-    paddingTop: 10
+    paddingTop: 10,
+    paddingBottom: 0
   },
   graphContainer: {
     flexDirection: Platform.select({

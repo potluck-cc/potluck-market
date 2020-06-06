@@ -2,11 +2,11 @@
   "expo": {
     "name": "Potluck Market",
     "slug": "Potluck",
-    "description": "We sell pot on the internet.",
+    "description": "We (help) sell pot on the internet.",
     "privacy": "unlisted",
     "sdkVersion": "34.0.0",
     "platforms": ["ios", "android", "web"],
-    "version": "1.5.2",
+    "version": "1.5.3",
     "orientation": "portrait",
     "icon": "./assets/images/potluck_logo_txt_large.png",
     "splash": {
@@ -20,9 +20,14 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "bundleIdentifier": "com.potluckmarket.Potluck",
-      "buildNumber": "1.5.2",
+      "buildNumber": "1.5.4",
       "icon": "./assets/images/potluck_logo_txt_large.png",
       "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Potluck Market uses your location to find nearby dispensaries.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Potluck Market uses your location to find nearby dispensaries.",
+        "NSLocationAlwaysUsageDescription": "Potluck Market uses your location to find nearby dispensaries."
+      },
       "isTabletOnly": false,
       "usesIcloudStorage": false,
       "splash": {
@@ -34,13 +39,19 @@
     },
     "android": {
       "package": "com.potluckmarket.Potluck",
-      "versionCode": 5,
+      "versionCode": 6,
       "icon": "./assets/images/potluck_logo_txt_large.png",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "CAMERA"
+        "CAMERA",
+        "CAMERA_ROLL"
       ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyB30Evgnn_D16ZtL5qCRFzUJrj5sGY2dUo"
+        }
+      },
       "splash": {
         "backgroundColor": "#46B060",
         "resizeMode": "contain",

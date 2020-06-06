@@ -5,7 +5,7 @@ import AppContext from "appcontext";
 import { Auth } from "aws-amplify";
 import { useDimensions, RNWebComponent } from "common";
 import { Divider } from "common/components";
-import { Text, ListItem } from "react-native-ui-kitten";
+import { Text, ListItem } from "@ui-kitten/components";
 import { Icon } from "react-native-elements";
 import { Signin } from "auth";
 import { scale, moderateScale } from "react-native-size-matters";

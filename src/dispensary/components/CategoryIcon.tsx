@@ -9,7 +9,7 @@ import {
   Platform
 } from "react-native";
 import { useDimensions } from "common";
-import { isMobile } from "react-device-detect";
+import { isMobile, isIOS13 } from "react-device-detect";
 import { TouchableWithoutFeedback } from "react-native-gesture-handler";
 
 type CategoryIconProps = {
@@ -19,7 +19,7 @@ type CategoryIconProps = {
   onPress?: () => void;
 };
 
-export default function CategoryIcon({
+export default memo(function CategoryIcon({
   source,
   containerStyle,
   imageStyle,
@@ -32,7 +32,7 @@ export default function CategoryIcon({
       zIndex: 999,
       width: Platform.select({
         default: widthToDP("25%"),
-        web: !isMobile ? widthToDP("19%") : widthToDP("25%")
+        web: isMobile || isIOS13 ? widthToDP("25%") : widthToDP("12%")
       }),
       borderRadius: 10,
       height: 45,
@@ -56,4 +56,4 @@ export default function CategoryIcon({
       <Image style={styles.image} source={source} />
     </TouchableWithoutFeedback>
   );
-}
+});

@@ -22,7 +22,8 @@ export async function getStoreWithMetadata({
         document: FindStoreByMetadata,
         variables: {
           metadata
-        }
+        },
+        fetchPolicy: "network-only"
       })) || null;
 
     if (getStoreByMetadata) {

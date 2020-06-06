@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { StyleSheet, ScrollView, View, Platform } from "react-native";
-import { Text, Button } from "react-native-ui-kitten";
+import { Text, Button } from "@ui-kitten/components";
 import { Card, TextHeader } from "common/components";
 import { Colors, isIphoneXorAbove, isTablet, useDimensions } from "common";
 import AppContext from "appcontext";

@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { ProductType } from "@potluckmarket/louis";
 import { Icon } from "react-native-elements";
-import { Tab, TabBar, Text } from "react-native-ui-kitten";
+import { Tab, TabBar, Text } from "@ui-kitten/components";
 import { CategoryIcon, ProductList, SearchHeader } from "./components";
 import {
   useDimensions,
@@ -27,7 +27,7 @@ import {
   isTablet
 } from "common";
 import { useLazyAppSyncQuery, OperationType } from "@potluckmarket/ella";
-import { isMobile } from "react-device-detect";
+import { isMobile, isIOS13 } from "react-device-detect";
 import { Cart } from "cart";
 import Modal from "modal-enhanced-react-native-web";
 import { Product } from "product";
@@ -132,7 +132,7 @@ function Menu(props: MenuProps) {
   const dispatch = useDispatch();
 
   const setCurrentStore = useCallback(
-    () => dispatch(setCurrentlyShoppingStore(store)),
+    store => dispatch(setCurrentlyShoppingStore(store)),
     [dispatch]
   );
 
@@ -140,11 +140,15 @@ function Menu(props: MenuProps) {
 
   useEffect(() => {
     initialize();
+
+    return () => {
+      setCurrentStore(null);
+    };
   }, []);
 
   useEffect(() => {
     if (store) {
-      setCurrentStore();
+      setCurrentStore(store);
       grabMenu();
     }
   }, [store]);
@@ -261,14 +265,28 @@ function Menu(props: MenuProps) {
       style={{
         height: Platform.select({
           default: heightToDP("100%"),
-          web: isMobile ? "100%" : heightToDP("100%")
+          web: isMobile || isIOS13 ? "100%" : heightToDP("100%")
         }),
-        backgroundColor: Platform.OS === "web" ? Colors.medGreen : "white"
+        backgroundColor: Platform.select({
+          default: Colors.medGreen,
+          web: isMobile || isIOS13 ? Colors.medGreen : undefined
+        })
       }}
     >
       <SearchHeader
         onSearch={query => setQuery(query)}
-        secondaryComponent={
+        renderRight={() =>
+          Platform.OS === "web" && !isMobile && !isTablet() ? (
+            <Cart
+              navigate={
+                Platform.OS === "web"
+                  ? props.history.push
+                  : props.navigation.navigate
+              }
+            />
+          ) : null
+        }
+        renderLeft={() =>
           Platform.OS === "web" && !isMobile && !isTablet() ? null : (
             <TouchableOpacity
               onPress={() => {
@@ -297,12 +315,20 @@ function Menu(props: MenuProps) {
             web:
               isTablet() && isPortrait
                 ? heightToDP("80%")
-                : isLandscape && isMobile
-                ? heightToDP("70%")
-                : heightToDP("75%")
+                : isMobile || isIOS13
+                ? isLandscape
+                  ? heightToDP("70%")
+                  : heightToDP("75%")
+                : "90%"
           }),
-          borderBottomLeftRadius: 30,
-          borderBottomRightRadius: 30,
+          borderBottomEndRadius: Platform.select({
+            default: 30,
+            web: isMobile || isIOS13 ? 30 : 0
+          }),
+          borderBottomStartRadius: Platform.select({
+            default: 30,
+            web: isMobile || isIOS13 ? 30 : 0
+          }),
           overflow: "hidden"
         }}
       >
@@ -321,7 +347,9 @@ function Menu(props: MenuProps) {
                 indicatorStyle={styles.indicator}
                 onSelect={selectIndex}
               >
-                <ScrollView horizontal>{renderTabs(selectedIndex)}</ScrollView>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {renderTabs(selectedIndex)}
+                </ScrollView>
               </TabBar>
             }
             footer={
@@ -349,15 +377,17 @@ function Menu(props: MenuProps) {
         )}
       </View>
 
-      {Platform.OS == "web" && (
-        <Cart
-          navigate={
-            Platform.OS === "web"
-              ? props.history.push
-              : props.navigation.navigate
-          }
-        />
-      )}
+      {Platform.OS === "web" ? (
+        isMobile || isIOS13 ? (
+          <Cart
+            navigate={
+              Platform.OS === "web"
+                ? props.history.push
+                : props.navigation.navigate
+            }
+          />
+        ) : null
+      ) : null}
 
       {Platform.OS === "web" && (
         <Modal

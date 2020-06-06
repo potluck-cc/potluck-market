@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useContext, Fragment } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import AppContext from "appcontext";
 import {
   StyleSheet,
   Platform,
   View,
   TouchableOpacity,
-  ActivityIndicator
+  ActivityIndicator,
+  SafeAreaView,
+  StatusBar
 } from "react-native";
-import { List, Text } from "react-native-ui-kitten";
+import { List, Text } from "@ui-kitten/components";
 import { Icon } from "react-native-elements";
-import { RNWebComponent, Colors, isTablet } from "common";
+import { RNWebComponent, Colors, isTablet, isIphoneXorAbove } from "common";
 import OrderCard from "./OrderCard";
 import { ProductList } from "cart";
 import { Modal } from "common/components";
@@ -103,7 +105,9 @@ export default function(props: RNWebComponent) {
   }
 
   return (
-    <Fragment>
+    <SafeAreaView>
+      <StatusBar hidden animated />
+
       <List
         data={orders}
         renderItem={renderOrders}
@@ -164,7 +168,7 @@ export default function(props: RNWebComponent) {
           <View />
         )}
       </Modal>
-    </Fragment>
+    </SafeAreaView>
   );
 }
 
@@ -180,7 +184,10 @@ const styles = StyleSheet.create({
   header: {
     width: "100%",
     alignItems: "flex-end",
-    justifyContent: "flex-end"
+    justifyContent: "flex-end",
+    marginRight: Platform.select({
+      ios: isIphoneXorAbove() ? 20 : undefined
+    })
   },
   listItem: {
     borderBottomWidth: 1,
